@@ -50,7 +50,7 @@ std::shared_ptr<coro::IScheduler> coro::CSchedulerManager::Get(const uint32_t& i
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
     auto it = pimpl->m_pool.find(id);
-    if(it != pimpl->m_pool.cend())
+    if(it == pimpl->m_pool.cend())
     {
         auto msg = boost::str(boost::format("coro: Scheduler with id %1% not found") % id);
         throw std::runtime_error(msg);

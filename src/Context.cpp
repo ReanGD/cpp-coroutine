@@ -24,8 +24,8 @@ namespace coro
 struct coro::CContext::impl
 {
     impl(std::shared_ptr<ILog> log, const uint32_t& id)
-        : m_log(log)
-        , m_id(id)
+        : m_id(id)
+        , m_log(log)
     {
     }
     

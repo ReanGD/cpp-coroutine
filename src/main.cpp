@@ -4,31 +4,28 @@
 #include <thread>
 #include <iostream>
 #include "Core.h"
+#include "main.h"
 
 void sleep(uint32_t sec);
 void task(uint32_t coro_num);
 void run(void);
 
-class CLogImpl : public coro::ILog
+void CLogImpl::Debug(const std::string& msg)
 {
-public:
-    void Debug(const std::string& msg) override
-    {
-        std::cout << "Debug: " << msg << std::endl;
-    }
-    void Info(const std::string& msg) override
-    {
-        std::cout << "Info: " << msg << std::endl;
-    }
-    void Warning(const std::string& msg) override
-    {
-        std::cout << "Warning: " << msg << std::endl;
-    }
-    void Error(const std::string& msg) override
-    {
-        std::cout << "Error: " << msg << std::endl;
-    }
-};
+    std::cout << "Debug: " << msg << std::endl;
+}
+void CLogImpl::Info(const std::string& msg)
+{
+    std::cout << "Info: " << msg << std::endl;
+}
+void CLogImpl::Warning(const std::string& msg)
+{
+    std::cout << "Warning: " << msg << std::endl;
+}
+void CLogImpl::Error(const std::string& msg)
+{
+    std::cout << "Error: " << msg << std::endl;
+}
 
 
 void sleep(uint32_t sec)
@@ -51,8 +48,8 @@ void task(uint32_t coro_num)
         g_map[coro_num] = coro::Id();
         coro::yield();
         /*coro::Defer([coro_num]{
-                std::cout << "defer " << std::endl;
-            });*/
+          std::cout << "defer " << std::endl;
+          });*/
     }
     catch(const std::exception& e)
     {

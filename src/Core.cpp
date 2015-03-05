@@ -41,11 +41,19 @@ void coro::impl::AddSheduler(const uint32_t& id, const std::string& name, const 
 }
 
 void coro::impl::Start(std::function<void(void)> task, const uint32_t& sheduler_id, const size_t stack_size)
-{   
-    Mng().ShedulerManager()->Get(sheduler_id)->Add([&task, stack_size] { Mng().ContextManager()->Start(std::move(task), stack_size); });
+{
+    Mng().ShedulerManager()->Get(sheduler_id)->Add(
+        [task, stack_size]
+        {
+            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size);
+        });
 }
 
 void coro::impl::Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_id)
 {
-    Mng().ShedulerManager()->Get(sheduler_id)->Add([coroutine_id] { Mng().ContextManager()->Resume(coroutine_id); });
+    Mng().ShedulerManager()->Get(sheduler_id)->Add(
+        [coroutine_id]
+        {
+            coro::Get::Instance().ContextManager()->Resume(coroutine_id);
+        });
 }
