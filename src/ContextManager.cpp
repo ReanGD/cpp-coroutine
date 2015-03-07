@@ -73,9 +73,9 @@ void coro::CContextManager::Start(tTask task, const size_t stack_size /*= STACK_
     pimpl->CreateCoroutine()->Start(stack_size, task);
 }
 
-void coro::CContextManager::Resume(const uint32_t& id)
+bool coro::CContextManager::Resume(const uint32_t& id)
 {
-    pimpl->GetCoroutine(id)->Resume();
+    return pimpl->GetCoroutine(id)->Resume();
 }
 
 void coro::CContextManager::Remove(const uint32_t& id)

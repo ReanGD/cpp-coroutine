@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Core.h"
 
+#include <thread>
 #include "Manager.h"
 #include "ContextManager.h"
 #include "SchedulerManager.h"
@@ -52,8 +53,13 @@ void coro::impl::Start(std::function<void(void)> task, const uint32_t& sheduler_
 void coro::impl::Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_id)
 {
     Mng().ShedulerManager()->Get(sheduler_id)->Add(
-        [coroutine_id]
+        [coroutine_id, sheduler_id]
         {
-            coro::Get::Instance().ContextManager()->Resume(coroutine_id);
+            if (!coro::Get::Instance().ContextManager()->Resume(coroutine_id))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                if (!coro::Get::Instance().ContextManager()->Resume(coroutine_id))
+                    Resume(coroutine_id, sheduler_id);
+            }                
         });
 }

@@ -20,7 +20,7 @@ namespace coro
       CContext(std::shared_ptr<ILog> log, const uint32_t& id);
   public:
     void Start(const size_t stack_size, tTask task);
-    void Resume(void);
+    bool Resume();
   private:
       std::shared_ptr<impl> pimpl;
   };

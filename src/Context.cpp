@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include <atomic>
 #include <stdexcept>
 #include <boost/format.hpp>
 #include <boost/thread/tss.hpp>
@@ -60,7 +61,7 @@ struct coro::CContext::impl
         Jump(this_ptr, reinterpret_cast<intptr_t>(&task));
     }
 
-    void Resume(std::shared_ptr<CContext::impl> this_ptr)
+    bool Resume(std::shared_ptr<CContext::impl> this_ptr)
     {
         if (!m_started)
         {
@@ -68,11 +69,10 @@ struct coro::CContext::impl
             throw std::runtime_error(msg);
         }
         if (m_running)
-        {
-            auto msg = boost::str(boost::format("coro: Coroutine with id %1% cannot resume (in running state)") % m_id);
-            throw std::runtime_error(msg);
-        }
+            return false;
         Jump(this_ptr);
+
+        return true;
     }
 
     void Jump(std::shared_ptr<CContext::impl> this_ptr, intptr_t fn = 0)
@@ -92,7 +92,9 @@ struct coro::CContext::impl
 
     void YieldImpl(void)
     {
+        m_log->ExitCoroutine();
         boost::context::jump_fcontext(&m_context, m_saved_context, 0);
+        m_log->EnterCoroutine(m_id);
     }
 
     void StartImpl(intptr_t fn)
@@ -100,6 +102,7 @@ struct coro::CContext::impl
         m_started = true;
         try
         {
+            m_log->EnterCoroutine(m_id);
             m_exception = nullptr;
             tTask task = std::move(*reinterpret_cast<tTask*>(fn));
             task();
@@ -121,8 +124,8 @@ struct coro::CContext::impl
 
     uint32_t m_id = 0;
     std::shared_ptr<ILog> m_log;    
-    bool m_started = false;
-    bool m_running = false;
+    std::atomic<bool> m_started = false;
+    std::atomic<bool> m_running = false;
     std::exception_ptr m_exception = nullptr;
     std::vector<uint8_t> m_stack;
     boost::context::fcontext_t m_context = nullptr;
@@ -159,7 +162,7 @@ void coro::CContext::Start(const size_t stack_size, tTask task)
     pimpl->Start(pimpl, stack_size, std::move(task));
 }
 
-void coro::CContext::Resume(void)
+bool coro::CContext::Resume(void)
 {
-    pimpl->Resume(pimpl);
+    return pimpl->Resume(pimpl);
 }
