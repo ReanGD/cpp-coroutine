@@ -19,9 +19,8 @@ namespace coro
         CContextManager& operator=(const CContextManager&) = delete;
         ~CContextManager();
     public:
-        void Start(tTask task, const size_t stack_size = STACK_SIZE);
-        bool Resume(const uint32_t& id);
-        void Remove(const uint32_t& id);
+        void Start(tTask task, const size_t stack_size);
+        void Resume(const uint32_t& id);
     private:
         struct impl; std::shared_ptr<impl> pimpl;
     };

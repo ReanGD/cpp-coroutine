@@ -7,23 +7,25 @@
 
 namespace coro
 {
-  void YieldImpl(void);
-  bool IsInsideCoro(void);
-  uint32_t GetContextId(void);
-
-  class ILog;
-  class CContext
-  {
-  public:
-      struct impl;
-  public:
-      CContext(std::shared_ptr<ILog> log, const uint32_t& id);
-  public:
-    void Start(const size_t stack_size, tTask task);
-    bool Resume();
-  private:
-      std::shared_ptr<impl> pimpl;
-  };
+    class ILog;
+    class CContextImpl;
+    class CContext
+    {
+    public:
+        CContext(std::shared_ptr<ILog> log, const uint32_t& id);
+        ~CContext() = default;
+        CContext() = delete;
+        CContext(const CContext&) = delete;
+        CContext& operator=(const CContext&) = delete;
+    public:
+        bool Start(tTask task, const size_t stack_size);
+        bool Resume();
+    public:
+        static uint32_t CurrentId();
+        static void YieldImpl();
+    private:
+        std::shared_ptr<CContextImpl> pimpl;
+    };
 
 }
 

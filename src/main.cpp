@@ -5,9 +5,10 @@
 #include <iostream>
 #include "Core.h"
 #include "main.h"
-#include <boost\lexical_cast.hpp>
+#include <boost/lexical_cast.hpp>
 
-void sleep(uint32_t sec);
+void local_sleep(uint32_t sec);
+std::string FormatMsg(const std::string& s);
 void task(uint32_t coro_num);
 void run(void);
 
@@ -50,7 +51,7 @@ void CLogImpl::ExitCoroutine(void)
     coro_id = 0;
 }
 
-void sleep(uint32_t sec)
+void local_sleep(uint32_t sec)
 {
     std::this_thread::sleep_for(std::chrono::seconds(sec));
 }
@@ -65,13 +66,13 @@ enum E_SHEDULERS
 void task(uint32_t coro_num)
 {
     CLogImpl().Debug("coro start");
-    sleep(coro_num);
+    local_sleep(coro_num);
     //if(coro_num == 3)
     //throw std::runtime_error("error 3");
     try
     {
         //throw std::runtime_error("123");
-        g_map[coro_num] = coro::Id();        
+        g_map[coro_num] = coro::CurrentId();        
         sleep(1);
         coro::yield();
         /*coro::Defer([coro_num]{

@@ -17,7 +17,7 @@ namespace coro
 
     void Init(std::shared_ptr<ILog> log);
     void Stop(void);
-    uint32_t Id();
+    uint32_t CurrentId();
     void yield();
 
     template<class IdType> inline void AddSheduler(const IdType& id, const std::string& name, const uint32_t thread_count = 1)

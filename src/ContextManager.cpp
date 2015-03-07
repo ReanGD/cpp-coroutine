@@ -12,17 +12,24 @@
 
 struct coro::CContextManager::impl
 {
-    std::shared_ptr<CContext> CreateCoroutine()
+    uint32_t NextId()
     {
         boost::lock_guard<boost::mutex> guard(m_mutex);
-        auto id = m_counter++;
+        
+        return m_counter++;
+    }
+    
+    std::shared_ptr<CContext> Create(const uint32_t id)
+    {
+        boost::lock_guard<boost::mutex> guard(m_mutex);
+
         auto ctx = std::make_shared<CContext>(m_log, id);
         m_pool[id] = ctx;
 
         return ctx;
     }
 
-    std::shared_ptr<CContext> GetCoroutine(const uint32_t& id)
+    std::shared_ptr<CContext> Get(const uint32_t& id)
     {
         boost::lock_guard<boost::mutex> guard(m_mutex);
         
@@ -35,7 +42,7 @@ struct coro::CContextManager::impl
         return it->second;
     }
 
-    void RemoveCoroutine(const uint32_t& id)
+    void Remove(const uint32_t& id)
     {
         boost::lock_guard<boost::mutex> guard(m_mutex);
 
@@ -68,17 +75,32 @@ coro::CContextManager::~CContextManager()
     pimpl->m_pool.clear();
 }
 
-void coro::CContextManager::Start(tTask task, const size_t stack_size /*= STACK_SIZE*/)
+void coro::CContextManager::Start(tTask task, const size_t stack_size)
 {
-    pimpl->CreateCoroutine()->Start(stack_size, task);
+    auto id = pimpl->NextId();
+    try
+    {
+        auto coroutine = pimpl->Create(id);
+        if(coroutine->Start(std::move(task), stack_size))
+            pimpl->Remove(id);
+    }
+    catch(...)
+    {
+        pimpl->Remove(id);
+        throw;
+    }
 }
 
-bool coro::CContextManager::Resume(const uint32_t& id)
+void coro::CContextManager::Resume(const uint32_t& id)
 {
-    return pimpl->GetCoroutine(id)->Resume();
-}
-
-void coro::CContextManager::Remove(const uint32_t& id)
-{
-    pimpl->RemoveCoroutine(id);
+    try
+    {
+        if(pimpl->Get(id)->Resume())
+            pimpl->Remove(id);
+    }
+    catch(...)
+    {
+        pimpl->Remove(id);
+        throw;
+    }
 }

@@ -4,7 +4,7 @@
 
 struct coro::CTimeout::impl
 {
-    boost::asio::deadline_timer timer;
+    //boost::asio::deadline_timer timer;
 };
 
 coro::CTimeout::CTimeout(std::chrono::milliseconds ms)

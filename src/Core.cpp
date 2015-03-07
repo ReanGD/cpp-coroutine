@@ -26,14 +26,14 @@ void coro::Stop(void)
     Mng().ShedulerManager()->StopAll();
 }
 
-uint32_t coro::Id()
+uint32_t coro::CurrentId()
 {
-    return GetContextId();
+    return CContext::CurrentId();
 }
 
 void coro::yield()
 {
-    YieldImpl();
+    CContext::YieldImpl();
 }
 
 void coro::impl::AddSheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count)
@@ -41,7 +41,9 @@ void coro::impl::AddSheduler(const uint32_t& id, const std::string& name, const 
     Mng().ShedulerManager()->Add(id, name, thread_count);
 }
 
-void coro::impl::Start(std::function<void(void)> task, const uint32_t& sheduler_id, const size_t stack_size)
+void coro::impl::Start(std::function<void(void)> task,
+                       const uint32_t& sheduler_id,
+                       const size_t stack_size/* = STACK_SIZE*/)
 {
     Mng().ShedulerManager()->Get(sheduler_id)->Add(
         [task, stack_size]
@@ -55,11 +57,6 @@ void coro::impl::Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_i
     Mng().ShedulerManager()->Get(sheduler_id)->Add(
         [coroutine_id, sheduler_id]
         {
-            if (!coro::Get::Instance().ContextManager()->Resume(coroutine_id))
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                if (!coro::Get::Instance().ContextManager()->Resume(coroutine_id))
-                    Resume(coroutine_id, sheduler_id);
-            }                
+            coro::Get::Instance().ContextManager()->Resume(coroutine_id);
         });
 }
