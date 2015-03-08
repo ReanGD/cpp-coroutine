@@ -7,14 +7,14 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include "Log.h"
-#include "SchedulerDef.h"
+#include "Scheduler.h"
 
 
 struct coro::CSchedulerManager::impl
 {
     boost::mutex m_mutex;
     std::shared_ptr<ILog> m_log;
-    std::map<uint32_t, std::shared_ptr<IScheduler>> m_pool;
+    std::map<uint32_t, std::shared_ptr<CScheduler>> m_pool;
 };
 
 coro::CSchedulerManager::CSchedulerManager(std::shared_ptr<ILog> log)
@@ -25,10 +25,10 @@ coro::CSchedulerManager::CSchedulerManager(std::shared_ptr<ILog> log)
 
 coro::CSchedulerManager::~CSchedulerManager()
 {
-    StopAll();
+    Stop();
 }
 
-void coro::CSchedulerManager::Add(const uint32_t& id, const std::string& name, const uint32_t thread_count)
+void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name, const uint32_t thread_count)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
@@ -38,14 +38,15 @@ void coro::CSchedulerManager::Add(const uint32_t& id, const std::string& name, c
         throw std::runtime_error(msg);
     }
 
-    auto ptr = std::make_shared<CSchedulerDef>(pimpl->m_log, id, name, thread_count);
-    pimpl->m_pool[id] = std::static_pointer_cast<coro::IScheduler>(ptr);
+    auto ptr = std::make_shared<CScheduler>(pimpl->m_log, id, name);
+    ptr->Start(thread_count);
+    pimpl->m_pool[id] = ptr;
 
     auto msg = boost::str(boost::format("Added scheduler with id %1% and name '%2%'") % id % name);
     pimpl->m_log->Info(msg);
 }
 
-std::shared_ptr<coro::IScheduler> coro::CSchedulerManager::Get(const uint32_t& id)
+void coro::CSchedulerManager::Add(const uint32_t& id, tTask task)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
@@ -56,10 +57,10 @@ std::shared_ptr<coro::IScheduler> coro::CSchedulerManager::Get(const uint32_t& i
         throw std::runtime_error(msg);
     }
 
-    return pimpl->m_pool[id];
+    it->second->Add(std::move(task));
 }
 
-void coro::CSchedulerManager::StopAll()
+void coro::CSchedulerManager::Stop()
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
     

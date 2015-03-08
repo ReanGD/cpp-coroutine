@@ -7,6 +7,7 @@
 #include <vector>
 #include <exception>
 #include <stdint.h>
+#include <boost/thread/mutex.hpp>
 #include <boost/context/all.hpp>
 #include "Types.h"
 
@@ -38,7 +39,10 @@ namespace coro
     private:
         std::shared_ptr<ILog> m_log;    
         std::atomic<bool> m_started;
-        std::atomic<bool> m_running;
+        bool m_running = false;
+        bool m_planned_resume = false;
+        uint32_t m_resume_scheduler = 0;
+        boost::mutex m_mutex;
         std::exception_ptr m_exception = nullptr;
         std::vector<uint8_t> m_stack;
         boost::context::fcontext_t m_context = nullptr;

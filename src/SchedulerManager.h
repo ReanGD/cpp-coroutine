@@ -5,12 +5,11 @@
 #include <memory>
 #include <string>
 #include <stdint.h>
-
+#include "Types.h"
 
 namespace coro
 {
     class ILog;
-    class IScheduler;
     class CSchedulerManager
     {
     public:
@@ -20,9 +19,9 @@ namespace coro
         CSchedulerManager& operator=(const CSchedulerManager&) = delete;
         ~CSchedulerManager();
     public:
-        void Add(const uint32_t& id, const std::string& name, const uint32_t thread_count);
-        std::shared_ptr<IScheduler> Get(const uint32_t& id);
-        void StopAll();
+        void Create(const uint32_t& id, const std::string& name, const uint32_t thread_count);
+        void Add(const uint32_t& id, tTask task);
+        void Stop();
     private:
         struct impl; std::shared_ptr<impl> pimpl;
     };

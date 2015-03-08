@@ -2,15 +2,19 @@
 #include "ContextImpl.h"
 
 #include "Log.h"
+#include "Manager.h"
+#include "SchedulerManager.h"
+#include "ContextManager.h"
 #include "ThreadStorage.h"
+#include "Scheduler.h"
 #include <boost/format.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 
 coro::CContextImpl::CContextImpl(std::shared_ptr<ILog> log, const uint32_t& context_id)
     : id(context_id)
     , m_log(log)
     , m_started(false)
-    , m_running(false)
 {
 }
 
@@ -51,23 +55,42 @@ void coro::CContextImpl::EntryPointWrapper(intptr_t fn)
 void coro::CContextImpl::OnEnter()
 {
     m_log->EnterCoroutine(id);
-    m_running = true;
 }
 
 void coro::CContextImpl::OnExit()
 {
-    m_running = false;
     m_log->ExitCoroutine();
 }
 
 void coro::CContextImpl::Jump(intptr_t fn/* = 0*/)
 {
-    auto tmp = CThreadStorage::SetContext(shared_from_this());
+    std::shared_ptr<CContextImpl> tmp;
+    {
+        boost::lock_guard<boost::mutex> guard(m_mutex);
+        m_running = true;
+        tmp = CThreadStorage::SetContext(shared_from_this());
+    }
+ 
     boost::context::jump_fcontext(&m_saved_context, m_context, fn);
-    CThreadStorage::SetContext(tmp);
 
-    if (m_exception != std::exception_ptr())
-        std::rethrow_exception(m_exception);
+    {
+        boost::lock_guard<boost::mutex> guard(m_mutex);
+        CThreadStorage::SetContext(tmp);
+        m_running = false;
+        if (m_exception != std::exception_ptr())
+            std::rethrow_exception(m_exception);
+        if (m_planned_resume)
+        {
+            m_planned_resume = false;
+            auto mng = Get::Instance().ShedulerManager();
+            uint32_t coroutine_id = id;
+            mng->Add(m_resume_scheduler,
+                     [coroutine_id]
+                     {
+                         coro::Get::Instance().ContextManager()->Resume(coroutine_id);
+                     });
+        }
+    }
 }
 
 bool coro::CContextImpl::Start(tTask task, const size_t stack_size)
@@ -97,10 +120,20 @@ bool coro::CContextImpl::Resume()
         auto msg = "coro: Coroutine with id %1% cannot resume (not started)";
         throw std::runtime_error(boost::str(boost::format(msg) % id));
     }
-    // if (m_running)
-    //     return false;???
-    Jump();
 
+    {
+        boost::lock_guard<boost::mutex> guard(m_mutex);
+        if(m_running)
+        {
+            m_planned_resume = true;
+            m_resume_scheduler = CScheduler::CurrentId();
+            return false;
+        }
+        else
+            m_running = true;
+    }
+    
+    Jump();
     bool is_finish = (!m_started);
     return is_finish;
 }
