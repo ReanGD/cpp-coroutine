@@ -2,7 +2,7 @@
 #ifndef TIMEOUT_H
 #define TIMEOUT_H
 
-#include <memory>
+#include <stdint.h>
 #include <chrono>
 
 namespace coro
@@ -11,10 +11,10 @@ namespace coro
     {
     public:
         CTimeout() = delete;
-        CTimeout(std::chrono::milliseconds ms);
+        CTimeout(const std::chrono::milliseconds& duration);
         ~CTimeout();
     private:
-        struct impl; std::shared_ptr<impl> pimpl;
+        uint32_t m_id;
     };
 }
 

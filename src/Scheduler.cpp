@@ -30,7 +30,12 @@ void coro::CScheduler::Join()
 
 uint32_t coro::CScheduler::CurrentId()
 {
-    if(!CThreadStorage::GetScheduler())
+    if(!IsInsideScheduler())
         throw std::runtime_error("coro: Get scheduler id in not under scheduler thread");
     return CThreadStorage::GetScheduler()->id;
+}
+
+bool coro::CScheduler::IsInsideScheduler()
+{
+    return static_cast<bool>(CThreadStorage::GetScheduler());
 }

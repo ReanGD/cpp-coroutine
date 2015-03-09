@@ -5,6 +5,7 @@
 #include <memory>
 #include "Log.h"
 #include "Types.h"
+#include "Timeout.h"
 
 namespace coro
 {

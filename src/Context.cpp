@@ -20,15 +20,19 @@ bool coro::CContext::Resume(void)
 
 uint32_t coro::CContext::CurrentId()
 {
-    if(!CThreadStorage::GetContext())
+    if(!IsInsideCoroutine())
         throw std::runtime_error("coro: Get context id in not coro-mode");
     return CThreadStorage::GetContext()->id;
 }
 
 void coro::CContext::YieldImpl()
 {
-    if(!CThreadStorage::GetContext())
+    if(!IsInsideCoroutine())
         throw std::runtime_error("coro: Yield in not coro-mode");
     CThreadStorage::GetContext()->YieldImpl();
 }
 
+bool coro::CContext::IsInsideCoroutine()
+{
+    return static_cast<bool>(CThreadStorage::GetContext());
+}

@@ -1,17 +1,20 @@
 #include "stdafx.h"
 #include "Timeout.h"
 
+#include "Context.h"
+#include "ContextImpl.h"
+#include "ThreadStorage.h"
 
-struct coro::CTimeout::impl
-{
-    //boost::asio::deadline_timer timer;
-};
 
-coro::CTimeout::CTimeout(std::chrono::milliseconds ms)
+coro::CTimeout::CTimeout(const std::chrono::milliseconds& duration)
 {
+    if(!CContext::IsInsideCoroutine())
+        throw std::runtime_error("coro: Cannot create coroutine timer not in coroutine");
+
+    m_id = CThreadStorage::GetContext()->AddTimeout(duration);
 }
-
 
 coro::CTimeout::~CTimeout()
 {
+    CThreadStorage::GetContext()->CancelTimeout(m_id);
 }

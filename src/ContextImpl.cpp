@@ -52,13 +52,35 @@ void coro::CContextImpl::EntryPointWrapper(intptr_t fn)
     CThreadStorage::GetContext()->EntryPoint(fn);
 }
 
+void coro::CContextImpl::CheckTimeouts()
+{
+    CTimeoutImpl expired_timeout;
+    for (auto it = m_timeouts.cbegin(); it != m_timeouts.cend(); )
+    {
+        if (it->second.IsExpired())
+        {
+            expired_timeout = it->second;
+            m_timeouts.erase(it++);
+        }
+        else
+            ++it;
+    }
+    expired_timeout.ThrowIfInit();
+}
+
 void coro::CContextImpl::OnEnter()
 {
+    boost::lock_guard<boost::mutex> guard(m_mutex);
+
     m_log->EnterCoroutine(id);
+    CheckTimeouts();
 }
 
 void coro::CContextImpl::OnExit()
 {
+    boost::lock_guard<boost::mutex> guard(m_mutex);
+
+    CheckTimeouts();
     m_log->ExitCoroutine();
 }
 
@@ -143,4 +165,20 @@ void coro::CContextImpl::YieldImpl()
     OnExit();
     boost::context::jump_fcontext(&m_context, m_saved_context, 0);
     OnEnter();
+}
+
+uint32_t coro::CContextImpl::AddTimeout(const std::chrono::milliseconds& duration)
+{
+    boost::lock_guard<boost::mutex> guard(m_mutex);
+
+    auto timeout_id = m_timeout_id_counter++;
+    m_timeouts[timeout_id] = CTimeoutImpl(duration);
+    
+    return timeout_id;
+}
+
+void coro::CContextImpl::CancelTimeout(const uint32_t timeout_id)
+{
+    boost::lock_guard<boost::mutex> guard(m_mutex);
+    m_timeouts.erase(timeout_id);
 }

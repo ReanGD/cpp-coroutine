@@ -23,6 +23,7 @@ namespace coro
     public:
         static uint32_t CurrentId();
         static void YieldImpl();
+        static bool IsInsideCoroutine();
     private:
         std::shared_ptr<CContextImpl> pimpl;
     };
