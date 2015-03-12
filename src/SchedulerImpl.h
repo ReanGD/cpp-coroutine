@@ -24,9 +24,9 @@ namespace coro
         CSchedulerImpl& operator=(const CSchedulerImpl&) = delete;
     protected:
         void MainLoop(uint32_t thread_number);
-        boost::thread CreateThread(uint32_t thread_number);
+        boost::thread CreateThread(uint32_t thread_number, tTask init_task);
     public:
-        void Start(const uint32_t& thread_count);
+        void Start(const uint32_t& thread_count, tTask init_task);
         void Add(tTask task);
         void Stop();
         void Join();

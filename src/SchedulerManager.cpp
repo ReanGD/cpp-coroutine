@@ -28,7 +28,7 @@ coro::CSchedulerManager::~CSchedulerManager()
     Stop();
 }
 
-void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name, const uint32_t thread_count)
+void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
@@ -39,7 +39,7 @@ void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name
     }
 
     auto ptr = std::make_shared<CScheduler>(pimpl->m_log, id, name);
-    ptr->Start(thread_count);
+    ptr->Start(thread_count, std::move(init_task));
     pimpl->m_pool[id] = ptr;
 
     auto msg = boost::str(boost::format("Added scheduler with id %1% and name '%2%'") % id % name);

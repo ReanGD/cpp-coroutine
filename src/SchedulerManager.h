@@ -19,7 +19,7 @@ namespace coro
         CSchedulerManager& operator=(const CSchedulerManager&) = delete;
         ~CSchedulerManager();
     public:
-        void Create(const uint32_t& id, const std::string& name, const uint32_t thread_count);
+        void Create(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task);
         void Add(const uint32_t& id, tTask task);
         void Stop();
     private:

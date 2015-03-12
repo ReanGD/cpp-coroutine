@@ -11,8 +11,8 @@ namespace coro
 {
     namespace impl
     {
-        void AddSheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count);
-        void Start(std::function<void(void)> task, const uint32_t& sheduler_id, const size_t stack_size);
+        void AddSheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task);
+        void Start(tTask task, const uint32_t& sheduler_id, const size_t stack_size);
         void Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_id);
     }
 
@@ -22,12 +22,12 @@ namespace coro
     uint32_t CurrentSchedulerId();
     void yield();
 
-    template<class IdType> inline void AddSheduler(const IdType& id, const std::string& name, const uint32_t thread_count = 1)
+    template<class IdType> inline void AddSheduler(const IdType& id, const std::string& name, const uint32_t thread_count = 1, tTask init_task = []{})
     {
         uint32_t uid = static_cast<uint32_t>(id);
-        impl::AddSheduler(uid, name, thread_count);
+        impl::AddSheduler(uid, name, thread_count, std::move(init_task));
     }
-    template<class IdType> inline void Start(std::function<void(void)> task, const IdType& sheduler_id, const size_t stack_size = STACK_SIZE)
+    template<class IdType> inline void Start(tTask task, const IdType& sheduler_id, const size_t stack_size = STACK_SIZE)
     {
         uint32_t uid = static_cast<uint32_t>(sheduler_id);
         impl::Start(std::move(task), uid, stack_size);

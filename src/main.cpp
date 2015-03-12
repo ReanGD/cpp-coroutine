@@ -87,7 +87,7 @@ void task(uint32_t coro_num)
 void run()
 {
     coro::Init(std::make_shared<CLogImpl>());
-    coro::AddSheduler(E_SH_MAIN, "main", 1);
+    coro::AddSheduler(E_SH_MAIN, "main", 2, []{ std::cout << "init thread" << std::endl;});
     coro::Start([]{ task(1); }, E_SH_MAIN);
     // coro::Start([]{ task(2); }, E_SH_MAIN);
 

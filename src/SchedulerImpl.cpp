@@ -44,11 +44,12 @@ void coro::CSchedulerImpl::MainLoop(uint32_t thread_number)
     CThreadStorage::SetScheduler(tmp);
 }
 
-boost::thread coro::CSchedulerImpl::CreateThread(uint32_t thread_number)
+boost::thread coro::CSchedulerImpl::CreateThread(uint32_t thread_number, tTask init_task)
 {
-    return boost::thread([this, thread_number] {
+    return boost::thread([this, thread_number, init_task] {
             try
             {
+                init_task();
                 MainLoop(thread_number);
             }
             catch (std::exception& e)
@@ -64,7 +65,7 @@ boost::thread coro::CSchedulerImpl::CreateThread(uint32_t thread_number)
         });
 }
 
-void coro::CSchedulerImpl::Start(const uint32_t& thread_count)
+void coro::CSchedulerImpl::Start(const uint32_t& thread_count, tTask init_task)
 {
     boost::lock_guard<boost::mutex> guard(m_mutex);
     
@@ -78,7 +79,7 @@ void coro::CSchedulerImpl::Start(const uint32_t& thread_count)
     m_threads.reserve(thread_count);
 
     for (uint32_t i = 0; i != thread_count; ++i)
-        m_threads.emplace_back(CreateThread(i));
+        m_threads.emplace_back(CreateThread(i, init_task));
 }
 
 void coro::CSchedulerImpl::Add(tTask task)

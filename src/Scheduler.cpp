@@ -8,9 +8,9 @@ coro::CScheduler::CScheduler(std::shared_ptr<ILog> log, const uint32_t& id, cons
 {
 }
 
-void coro::CScheduler::Start(const uint32_t& thread_count)
+void coro::CScheduler::Start(const uint32_t& thread_count, tTask init_task)
 {
-    pimpl->Start(thread_count);
+    pimpl->Start(thread_count, std::move(init_task));
 }
 
 void coro::CScheduler::Add(tTask task)

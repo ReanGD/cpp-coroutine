@@ -21,7 +21,7 @@ namespace coro
         CScheduler(const CScheduler&) = delete;
         CScheduler& operator=(const CScheduler&) = delete;
     public:
-        void Start(const uint32_t& thread_count);
+        void Start(const uint32_t& thread_count, tTask init_task);
         void Add(tTask task);
         void Stop();
         void Join();
