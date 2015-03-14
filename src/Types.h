@@ -2,6 +2,14 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#if defined(_MSC_VER)
+#   define TLS                      __declspec(thread)
+#   define NOEXCEPT
+#else
+#   define TLS                      __thread
+#   define NOEXCEPT                 noexcept
+#endif
+
 #include <string>
 #include <stdexcept>
 #include <functional>
@@ -19,14 +27,8 @@ namespace coro
         explicit TimeoutError(const std::string& what_arg);
         explicit TimeoutError(const char* what_arg);
     public:
-        const char* what() const noexcept override;
+        const char* what() const NOEXCEPT override;
     };
 }
-
-#if defined(_MSC_VER)
-#   define TLS                      __declspec(thread)
-#else
-#   define TLS                      __thread
-#endif
 
 #endif

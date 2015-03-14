@@ -12,7 +12,7 @@ coro::TimeoutError::TimeoutError(const char* what_arg)
 {
 }
 
-const char* coro::TimeoutError::what() const noexcept
+const char* coro::TimeoutError::what() const NOEXCEPT
 {
     return std::runtime_error::what();
 }

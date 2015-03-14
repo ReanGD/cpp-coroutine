@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Core.h"
+#include "Coroutine.h"
 
 #include <thread>
 #include "Manager.h"
