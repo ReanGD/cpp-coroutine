@@ -8,7 +8,7 @@
 #include <vector>
 #include <exception>
 #include <stdint.h>
-#include <boost/thread/mutex.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include <boost/context/all.hpp>
 #include "TimeoutImpl.h"
 
@@ -18,6 +18,13 @@ namespace coro
     class CContextImpl
         : public std::enable_shared_from_this<CContextImpl>
     {
+    private:
+        struct SResume
+        {
+            uint32_t resume_id;
+            uint32_t scheduler_id;
+            bool is_init = false;
+        };
     public:
         CContextImpl(std::shared_ptr<ILog> log, const uint32_t& context_id);
         ~CContextImpl();
@@ -32,21 +39,23 @@ namespace coro
         void OnEnter();
         void OnExit();
         void Jump(intptr_t fn = 0);
+        bool CheckResume(const uint32_t resume_id);
     public:
         bool Start(tTask task, const size_t stack_size);
-        bool Resume();
+        bool Resume(const uint32_t resume_id);
         void YieldImpl();
         uint32_t AddTimeout(const std::chrono::milliseconds& duration);
         void CancelTimeout(const uint32_t timeout_id);
+        uint32_t GetResumeId(void);
     public:
         const uint32_t id = 0;
     private:
         std::shared_ptr<ILog> m_log;
         std::atomic<bool> m_started;
         bool m_running = false;
-        bool m_planned_resume = false;
-        uint32_t m_resume_scheduler = 0;
-        boost::mutex m_mutex;
+        SResume m_next_resume;
+        uint32_t m_resume_id = 0;
+        boost::recursive_mutex m_mutex;
         std::map<uint32_t, CTimeoutImpl> m_timeouts;
         uint32_t m_timeout_id_counter = 0;
         std::exception_ptr m_exception = nullptr;

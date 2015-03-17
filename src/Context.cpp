@@ -13,16 +13,21 @@ bool coro::CContext::Start(tTask task, const size_t stack_size)
     return pimpl->Start(std::move(task), stack_size);
 }
 
-bool coro::CContext::Resume(void)
+bool coro::CContext::Resume(const uint32_t resume_id)
 {
-    return pimpl->Resume();
+    return pimpl->Resume(resume_id);
 }
 
-uint32_t coro::CContext::CurrentId()
+coro::tResumeHandle coro::CContext::CurrentResumeId()
 {
     if(!IsInsideCoroutine())
         throw std::runtime_error("coro: Get context id in not coro-mode");
-    return CThreadStorage::GetContext()->id;
+    tResumeHandle resume_handle;
+    auto ctx = CThreadStorage::GetContext();
+    resume_handle.coroutine_id = ctx->id;
+    resume_handle.resume_id = ctx->GetResumeId();
+
+    return resume_handle;
 }
 
 void coro::CContext::YieldImpl()

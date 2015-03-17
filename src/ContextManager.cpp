@@ -91,16 +91,16 @@ void coro::CContextManager::Start(tTask task, const size_t stack_size)
     }
 }
 
-void coro::CContextManager::Resume(const uint32_t& id)
+void coro::CContextManager::Resume(const tResumeHandle& resume_handle)
 {
     try
     {
-        if(pimpl->Get(id)->Resume())
-            pimpl->Remove(id);
+        if(pimpl->Get(resume_handle.coroutine_id)->Resume(resume_handle.resume_id))
+            pimpl->Remove(resume_handle.coroutine_id);
     }
     catch(...)
     {
-        pimpl->Remove(id);
+        pimpl->Remove(resume_handle.coroutine_id);
         throw;
     }
 }

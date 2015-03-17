@@ -13,12 +13,12 @@ namespace coro
     {
         void AddSheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task);
         void Start(tTask task, const uint32_t& sheduler_id, const size_t stack_size);
-        void Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_id);
+        void Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id);
     }
 
     void Init(std::shared_ptr<ILog> log);
     void Stop(void);
-    uint32_t CurrentCoroutineId();
+    tResumeHandle CurrentResumeId();
     uint32_t CurrentSchedulerId();
     void yield();
 
@@ -32,10 +32,10 @@ namespace coro
         uint32_t uid = static_cast<uint32_t>(sheduler_id);
         impl::Start(std::move(task), uid, stack_size);
     }
-    template<class IdType> inline void Resume(const uint32_t& coroutine_id, const IdType& sheduler_id)
+    template<class IdType> inline void Resume(const tResumeHandle& resume_handle, const IdType& sheduler_id)
     {
         uint32_t uid = static_cast<uint32_t>(sheduler_id);
-        impl::Resume(coroutine_id, uid);
+        impl::Resume(resume_handle, uid);
     }
 }
 

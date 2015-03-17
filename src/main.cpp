@@ -3,7 +3,7 @@
 #include <map>
 #include <thread>
 #include <iostream>
-#include "Core.h"
+#include "Coroutine.h"
 #include "main.h"
 #include <boost/lexical_cast.hpp>
 
@@ -56,7 +56,7 @@ void local_sleep(uint32_t sec)
     std::this_thread::sleep_for(std::chrono::seconds(sec));
 }
 
-static std::map<uint32_t, uint32_t> g_map;
+static std::map<uint32_t, coro::tResumeHandle> g_map;
 
 enum E_SHEDULERS
 {
@@ -70,7 +70,7 @@ void task(uint32_t coro_num)
     CLogImpl().Debug("coro start in scheduler " + boost::lexical_cast<std::string>(scheduler_id));
     try
     {
-        g_map[coro_num] = coro::CurrentCoroutineId();
+        g_map[coro_num] = coro::CurrentResumeId();
         coro::CTimeout t(std::chrono::seconds(10));
         local_sleep(3);
         CLogImpl().Debug("coro yield");
@@ -94,9 +94,9 @@ void run()
     local_sleep(5);
     for (auto& v_map : g_map)
     {
-        auto ctx_id = v_map.second;
-        std::cout << "resume " << ctx_id << std::endl;
-        coro::Resume(ctx_id, E_SH_MAIN);
+        auto resume_id = v_map.second;
+        std::cout << "resume " << resume_id.coroutine_id << ":" << resume_id.resume_id << std::endl;
+        coro::Resume(resume_id, E_SH_MAIN);
     }
     local_sleep(2);
     coro::Stop();

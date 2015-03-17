@@ -16,7 +16,7 @@ namespace coro
     public:
         bool IsExpired() const;
         void ThrowIfInit() const;
-    public:
+    private:
         std::chrono::milliseconds m_duration = std::chrono::milliseconds::max();
         std::chrono::time_point<std::chrono::system_clock> m_expiry_time;
     };

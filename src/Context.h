@@ -19,9 +19,9 @@ namespace coro
         CContext& operator=(const CContext&) = delete;
     public:
         bool Start(tTask task, const size_t stack_size);
-        bool Resume();
+        bool Resume(const uint32_t resume_id);
     public:
-        static uint32_t CurrentId();
+        static tResumeHandle CurrentResumeId();
         static void YieldImpl();
         static bool IsInsideCoroutine();
     private:

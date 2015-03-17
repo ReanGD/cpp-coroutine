@@ -26,9 +26,9 @@ void coro::Stop(void)
     Mng().ShedulerManager()->Stop();
 }
 
-uint32_t coro::CurrentCoroutineId()
+coro::tResumeHandle coro::CurrentResumeId()
 {
-    return CContext::CurrentId();
+    return CContext::CurrentResumeId();
 }
 
 uint32_t coro::CurrentSchedulerId()
@@ -57,11 +57,11 @@ void coro::impl::Start(tTask task,
         });
 }
 
-void coro::impl::Resume(const uint32_t& coroutine_id, const uint32_t& sheduler_id)
+void coro::impl::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
 {
     Mng().ShedulerManager()->Add(sheduler_id,
-        [coroutine_id]
+        [resume_handle]
         {
-            coro::Get::Instance().ContextManager()->Resume(coroutine_id);
+            coro::Get::Instance().ContextManager()->Resume(resume_handle);
         });
 }

@@ -11,12 +11,18 @@
 #endif
 
 #include <string>
+#include <stdint.h>
 #include <stdexcept>
 #include <functional>
 
 namespace coro
 {
-    using tTask = std::function < void(void) > ;
+    using tTask = std::function < void(void) >;
+    struct tResumeHandle
+    {
+        uint32_t coroutine_id;
+        uint32_t resume_id;
+    };
 
     const size_t STACK_SIZE = 256 * 1024; // 256 kB
 

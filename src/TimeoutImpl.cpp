@@ -22,4 +22,3 @@ void coro::CTimeoutImpl::ThrowIfInit() const
         throw TimeoutError(boost::str(boost::format(msg) % m_duration.count()));
     }
 }
-

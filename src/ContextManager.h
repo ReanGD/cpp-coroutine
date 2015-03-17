@@ -20,7 +20,7 @@ namespace coro
         ~CContextManager();
     public:
         void Start(tTask task, const size_t stack_size);
-        void Resume(const uint32_t& id);
+        void Resume(const tResumeHandle& resume_handle);
     private:
         struct impl; std::shared_ptr<impl> pimpl;
     };
