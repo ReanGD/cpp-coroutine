@@ -21,51 +21,47 @@ coro::CScheduler::~CScheduler()
     Join();  
 }
 
-void coro::CScheduler::MainLoop(uint32_t thread_number)
+void coro::CScheduler::MainLoop(const uint32_t& thread_number, const tTask& init_task)
 {
-    auto tmp = CThreadStorage::SetSchedulerId(id);
-    while (!m_service.stopped())
+    try
     {
-        try
+        auto tmp = CThreadStorage::SetSchedulerId(id);
+        init_task();
+        while (!m_service.stopped())
         {
-            m_service.run_one();
-        }
-        catch (std::exception& e)
-        {
-            auto msg = "Task in thread number %1% in scheduler with id %2% and name '%3%' finish with exception %4%";
-            m_log->Error(boost::str(boost::format(msg) % thread_number % id % name % e.what()));
-        }
-        catch (...)
-        {
-            auto msg = "Task in thread number %1% in scheduler with id %2% and name '%3%' finish with unknown exception";
-            m_log->Error(boost::str(boost::format(msg) % thread_number % id % name));
-        }
-    }
-    CThreadStorage::SetSchedulerId(tmp);
-}
-
-boost::thread coro::CScheduler::CreateThread(uint32_t thread_number, tTask init_task)
-{
-    return boost::thread([this, thread_number, init_task] {
             try
             {
-                init_task();
-                MainLoop(thread_number);
+                m_service.run_one();
             }
             catch (std::exception& e)
             {
-                auto msg = "Thread in scheduler with id %1% and name \"%2%\" finish with exception %3%";
-                m_log->Error(boost::str(boost::format(msg) % id % name % e.what()));
+                auto msg =
+                    "Task in thread number %1% in scheduler with id %2% and name '%3%' finish with exception %4%";
+                m_log->Error(boost::str(boost::format(msg) % thread_number % id % name % e.what()));
             }
             catch (...)
             {
-                auto msg = "Thread in scheduler with id %1% and name \"%2%\" finish with unknown exception";
-                m_log->Error(boost::str(boost::format(msg) % id % name));
+                auto msg =
+                    "Task in thread number %1% in scheduler with id %2% and name '%3%' finish with unknown exception";
+                m_log->Error(boost::str(boost::format(msg) % thread_number % id % name));
             }
-        });
+        }
+
+        CThreadStorage::SetSchedulerId(tmp);
+    }
+    catch (std::exception& e)
+    {
+        auto msg = "Thread in scheduler with id %1% and name \"%2%\" finish with exception %3%";
+        m_log->Error(boost::str(boost::format(msg) % id % name % e.what()));
+    }
+    catch (...)
+    {
+        auto msg = "Thread in scheduler with id %1% and name \"%2%\" finish with unknown exception";
+        m_log->Error(boost::str(boost::format(msg) % id % name));
+    }
 }
 
-void coro::CScheduler::Start(const uint32_t& thread_count, tTask init_task)
+void coro::CScheduler::Start(const uint32_t& thread_count, const tTask& init_task)
 {
     boost::lock_guard<boost::mutex> guard(m_mutex);
     
@@ -79,7 +75,12 @@ void coro::CScheduler::Start(const uint32_t& thread_count, tTask init_task)
     m_threads.reserve(thread_count);
 
     for (uint32_t i = 0; i != thread_count; ++i)
-        m_threads.emplace_back(CreateThread(i, init_task));
+        m_threads.emplace_back(
+            boost::thread(
+                [this, i, init_task]
+                {
+                    MainLoop(i, init_task);
+                }));
 }
 
 void coro::CScheduler::Add(tTask task)

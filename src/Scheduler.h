@@ -25,10 +25,9 @@ namespace coro
         CScheduler(const CScheduler&) = delete;
         CScheduler& operator=(const CScheduler&) = delete;
     private:
-        void MainLoop(uint32_t thread_number);
-        boost::thread CreateThread(uint32_t thread_number, tTask init_task);
+        void MainLoop(const uint32_t& thread_number, const tTask& init_task);
     public:
-        void Start(const uint32_t& thread_count, tTask init_task);
+        void Start(const uint32_t& thread_count, const tTask& init_task);
         void Add(tTask task);
         void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
         void Stop();
