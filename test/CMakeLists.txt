@@ -23,7 +23,8 @@ set(LIBS ${COROUTINE_LIB} ${Boost_LIBRARIES} ${GTEST_LIBRARY})
 
 aux_source_directory(. SRC_MAIN)
 aux_source_directory(src/ SRC_TEST)
-set(SRCS ${SRC_MAIN} ${SRC_TEST})
+aux_source_directory(src/helper/ SRC_HELPER)
+set(SRCS ${SRC_MAIN} ${SRC_TEST} ${SRC_HELPER})
 
 set(GTEST_FLAGS "-Wno-weak-vtables")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GTEST_FLAGS} -std=c++11 -pthread -fcxx-exceptions -fexceptions -Weverything -pedantic -Wno-c++98-compat -Wno-exit-time-destructors -Wno-global-constructors -Wno-padded")
