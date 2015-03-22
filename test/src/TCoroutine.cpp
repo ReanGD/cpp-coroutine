@@ -88,3 +88,32 @@ TEST_F(TestCoroutine, YieldInOtherScheduler)
     ASSERT_EQ(E_SH_2, scheduler_id);
     coro::Stop();
 }
+
+TEST_F(TestCoroutine, TimeoutTrigger)
+{
+    coro::Init(std::make_shared<CLogFake>());
+    coro::AddSheduler(E_SH_1, "main", 1, []{});
+    std::atomic<bool> is_triggered(false);
+    std::atomic<uint32_t> scheduler_id(coro::ERROR_SCHEDULER_ID);
+    coro::Start([this, &is_triggered, &scheduler_id]
+                {
+                    is_triggered = false;
+                    try {
+                        coro::CTimeout(std::chrono::milliseconds(100));
+                        coro::yield();
+                    }
+                    catch (const coro::TimeoutError&)
+                    {
+                        is_triggered = true;
+                        scheduler_id = coro::CurrentSchedulerId();
+                    }
+                    catch (...)
+                    {
+                    }
+                    IncNotify();
+                }, E_SH_1);
+    Wait(1);
+    ASSERT_EQ(true, is_triggered);
+    ASSERT_EQ(E_SH_1, scheduler_id);
+    coro::Stop();
+}
