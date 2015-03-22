@@ -7,6 +7,7 @@
 void TestCoroutine::SetUp()
 {
     m_cv_counter = 0;
+    m_wait_counter = 0;
     coro::Init(std::make_shared<CLogFake>());
 }
 
@@ -27,6 +28,12 @@ void TestCoroutine::Wait(uint32_t val, const std::chrono::milliseconds& duration
     m_cv.wait_for(lck, duration, [&] {return (m_cv_counter == val);});
 }
 
+void TestCoroutine::IncWait(const std::chrono::milliseconds& duration)
+{
+    ++m_wait_counter;
+    Wait(m_wait_counter, duration);
+}
+
 enum E_SHEDULERS
 {
     E_SH_1,
@@ -39,6 +46,12 @@ TEST_F(TestCoroutine, BusySchedulerId)
     ASSERT_THROW(coro::AddSheduler(coro::TIMEOUT_SCHEDULER_ID, "main"), std::runtime_error);
 }
 
+TEST_F(TestCoroutine, DuplicateSchedulerId)
+{
+    ASSERT_NO_THROW(coro::AddSheduler(E_SH_1, "main"));
+    ASSERT_THROW(coro::AddSheduler(E_SH_1, "dop"), std::runtime_error);
+}
+
 TEST_F(TestCoroutine, Yield0)
 {
     coro::AddSheduler(E_SH_1, "main");
@@ -48,7 +61,7 @@ TEST_F(TestCoroutine, Yield0)
                     process = 1;
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     ASSERT_EQ(1, process);
 }
 
@@ -67,11 +80,11 @@ TEST_F(TestCoroutine, Yield1)
                     process = 2;
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     ASSERT_EQ(1, process);
     coro::Resume(h_resume, E_SH_1);
 
-    Wait(2);
+    IncWait();
     ASSERT_EQ(2, process);
 }
 
@@ -95,15 +108,15 @@ TEST_F(TestCoroutine, Yield2)
                     process = 3;
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     ASSERT_EQ(1, process);
     coro::Resume(h_resume, E_SH_1);
     
-    Wait(2);
+    IncWait();
     ASSERT_EQ(2, process);
     coro::Resume(h_resume, E_SH_1);
 
-    Wait(3);
+    IncWait();
     ASSERT_EQ(3, process);
 }
 
@@ -123,11 +136,11 @@ TEST_F(TestCoroutine, YieldInOtherScheduler)
                     scheduler_id = coro::CurrentSchedulerId();
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     ASSERT_EQ(E_SH_1, scheduler_id);
     coro::Resume(h_resume, E_SH_2);
 
-    Wait(2);
+    IncWait();
     ASSERT_EQ(E_SH_2, scheduler_id);
 }
 
@@ -154,7 +167,7 @@ TEST_F(TestCoroutine, TimeoutTrigger)
                     }
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     ASSERT_EQ(true, is_triggered);
     ASSERT_EQ(E_SH_1, scheduler_id);
 }
@@ -185,9 +198,9 @@ TEST_F(TestCoroutine, TimeoutNotLoad)
                     scheduler_id = coro::CurrentSchedulerId();
                     IncNotify();
                 }, E_SH_1);
-    Wait(1);
+    IncWait();
     coro::Resume(h_resume, E_SH_1);
-    Wait(2);
+    IncWait();
     ASSERT_EQ(false, is_triggered);
     ASSERT_EQ(E_SH_1, scheduler_id);
 }
