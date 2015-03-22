@@ -41,3 +41,26 @@ TEST_F(TestCoroutine, Run)
     coro::Stop();
     ASSERT_EQ(true, is_called);
 }
+
+TEST_F(TestCoroutine, RunAndYield)
+{
+    coro::Init(std::make_shared<CLogFake>());
+    coro::AddSheduler(E_SH_1, "main", 1, []{});
+    std::atomic<uint32_t> process(0);
+    coro::tResumeHandle h_resume;
+    coro::Start([this, &process, &h_resume]
+                {
+                    process = 1;
+                    h_resume = coro::CurrentResumeId();
+                    IncNotify();
+                    coro::yield();
+                    process = 2;
+                    IncNotify();
+                }, E_SH_1);
+    Wait(1);
+    ASSERT_EQ(1, process);
+    coro::Resume(h_resume, E_SH_1);
+    Wait(2);
+    ASSERT_EQ(2, process);
+    coro::Stop();
+}
