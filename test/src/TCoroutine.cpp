@@ -64,3 +64,27 @@ TEST_F(TestCoroutine, RunAndYield)
     ASSERT_EQ(2, process);
     coro::Stop();
 }
+
+TEST_F(TestCoroutine, YieldInOtherScheduler)
+{
+    coro::Init(std::make_shared<CLogFake>());
+    coro::AddSheduler(E_SH_1, "main", 1, []{});
+    coro::AddSheduler(E_SH_2, "dop", 1, []{});
+    std::atomic<uint32_t> scheduler_id(coro::ERROR_SCHEDULER_ID);
+    coro::tResumeHandle h_resume;
+    coro::Start([this, &scheduler_id, &h_resume]
+                {
+                    scheduler_id = coro::CurrentSchedulerId();
+                    h_resume = coro::CurrentResumeId();
+                    IncNotify();
+                    coro::yield();
+                    scheduler_id = coro::CurrentSchedulerId();
+                    IncNotify();
+                }, E_SH_1);
+    Wait(1);
+    ASSERT_EQ(E_SH_1, scheduler_id);
+    coro::Resume(h_resume, E_SH_2);
+    Wait(2);
+    ASSERT_EQ(E_SH_2, scheduler_id);
+    coro::Stop();
+}
