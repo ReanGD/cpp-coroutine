@@ -12,6 +12,18 @@
 
 struct coro::CSchedulerManager::impl
 {
+    std::shared_ptr<CScheduler> Get(const uint32_t& id)
+    {
+        auto it = m_pool.find(id);
+        if(it == m_pool.cend())
+        {
+            auto msg = boost::str(boost::format("coro: Scheduler with id %1% not found") % id);
+            throw std::runtime_error(msg);
+        }
+
+        return it->second;
+    }
+    
     boost::mutex m_mutex;
     std::map<uint32_t, std::shared_ptr<CScheduler>> m_pool;
 };
@@ -49,28 +61,14 @@ void coro::CSchedulerManager::Add(const uint32_t& id, tTask task)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
-    auto it = pimpl->m_pool.find(id);
-    if(it == pimpl->m_pool.cend())
-    {
-        auto msg = boost::str(boost::format("coro: Scheduler with id %1% not found") % id);
-        throw std::runtime_error(msg);
-    }
-
-    it->second->Add(std::move(task));
+    pimpl->Get(id)->Add(std::move(task));
 }
 
 void coro::CSchedulerManager::AddTimeout(tTask task, const std::chrono::milliseconds& duration)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
-    auto it = pimpl->m_pool.find(TIMEOUT_SCHEDULER_ID);
-    if(it == pimpl->m_pool.cend())
-    {
-        auto msg = boost::str(boost::format("coro: Timeout scheduler with id %1% not found") % TIMEOUT_SCHEDULER_ID);
-        throw std::runtime_error(msg);
-    }
-
-    it->second->AddTimeout(std::move(task), duration);
+    pimpl->Get(TIMEOUT_SCHEDULER_ID)->AddTimeout(std::move(task), duration);
 }
 
 void coro::CSchedulerManager::Stop()
