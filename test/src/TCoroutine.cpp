@@ -7,6 +7,7 @@
 void TestCoroutine::SetUp()
 {
     m_cv_counter = 0;
+    coro::Init(std::make_shared<CLogFake>());
 }
 
 void TestCoroutine::IncNotify()
@@ -27,26 +28,24 @@ enum E_SHEDULERS
     E_SH_2
 };
 
-TEST_F(TestCoroutine, Run)
+TEST_F(TestCoroutine, Yield0)
 {
-    coro::Init(std::make_shared<CLogFake>());
     coro::AddSheduler(E_SH_1, "main", 1, []{});
-    bool is_called = false;
-    coro::Start([this, &is_called]
+    uint32_t process(0);
+    coro::Start([this, &process]
                 {
-                    is_called = true;
+                    process = 1;
                     IncNotify();
                 }, E_SH_1);
     Wait(1);
+    ASSERT_EQ(1, process);
     coro::Stop();
-    ASSERT_EQ(true, is_called);
 }
 
-TEST_F(TestCoroutine, RunAndYield)
+TEST_F(TestCoroutine, Yield1)
 {
-    coro::Init(std::make_shared<CLogFake>());
     coro::AddSheduler(E_SH_1, "main", 1, []{});
-    std::atomic<uint32_t> process(0);
+    uint32_t process(0);
     coro::tResumeHandle h_resume;
     coro::Start([this, &process, &h_resume]
                 {
@@ -54,23 +53,57 @@ TEST_F(TestCoroutine, RunAndYield)
                     h_resume = coro::CurrentResumeId();
                     IncNotify();
                     coro::yield();
+
                     process = 2;
                     IncNotify();
                 }, E_SH_1);
     Wait(1);
     ASSERT_EQ(1, process);
     coro::Resume(h_resume, E_SH_1);
+
     Wait(2);
     ASSERT_EQ(2, process);
     coro::Stop();
 }
 
+TEST_F(TestCoroutine, Yield2)
+{
+    coro::AddSheduler(E_SH_1, "main", 1, []{});
+    uint32_t process(0);
+    coro::tResumeHandle h_resume;
+    coro::Start([this, &process, &h_resume]
+                {
+                    process = 1;
+                    h_resume = coro::CurrentResumeId();
+                    IncNotify();
+                    coro::yield();
+                    
+                    process = 2;
+                    h_resume = coro::CurrentResumeId();
+                    IncNotify();
+                    coro::yield();
+                    
+                    process = 3;
+                    IncNotify();
+                }, E_SH_1);
+    Wait(1);
+    ASSERT_EQ(1, process);
+    coro::Resume(h_resume, E_SH_1);
+    
+    Wait(2);
+    ASSERT_EQ(2, process);
+    coro::Resume(h_resume, E_SH_1);
+
+    Wait(3);
+    ASSERT_EQ(3, process);
+    coro::Stop();
+}
+
 TEST_F(TestCoroutine, YieldInOtherScheduler)
 {
-    coro::Init(std::make_shared<CLogFake>());
     coro::AddSheduler(E_SH_1, "main", 1, []{});
     coro::AddSheduler(E_SH_2, "dop", 1, []{});
-    std::atomic<uint32_t> scheduler_id(coro::ERROR_SCHEDULER_ID);
+    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
     coro::Start([this, &scheduler_id, &h_resume]
                 {
@@ -78,12 +111,14 @@ TEST_F(TestCoroutine, YieldInOtherScheduler)
                     h_resume = coro::CurrentResumeId();
                     IncNotify();
                     coro::yield();
+
                     scheduler_id = coro::CurrentSchedulerId();
                     IncNotify();
                 }, E_SH_1);
     Wait(1);
     ASSERT_EQ(E_SH_1, scheduler_id);
     coro::Resume(h_resume, E_SH_2);
+
     Wait(2);
     ASSERT_EQ(E_SH_2, scheduler_id);
     coro::Stop();
@@ -91,10 +126,9 @@ TEST_F(TestCoroutine, YieldInOtherScheduler)
 
 TEST_F(TestCoroutine, TimeoutTrigger)
 {
-    coro::Init(std::make_shared<CLogFake>());
     coro::AddSheduler(E_SH_1, "main", 1, []{});
-    std::atomic<bool> is_triggered(false);
-    std::atomic<uint32_t> scheduler_id(coro::ERROR_SCHEDULER_ID);
+    bool is_triggered(false);
+    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::Start([this, &is_triggered, &scheduler_id]
                 {
                     is_triggered = false;
@@ -121,10 +155,9 @@ TEST_F(TestCoroutine, TimeoutTrigger)
 
 TEST_F(TestCoroutine, TimeoutNotLoad)
 {
-    coro::Init(std::make_shared<CLogFake>());
     coro::AddSheduler(E_SH_1, "main", 1, []{});
-    std::atomic<bool> is_triggered(false);
-    std::atomic<uint32_t> scheduler_id(coro::ERROR_SCHEDULER_ID);
+    bool is_triggered(false);
+    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
     coro::Start([this, &is_triggered, &scheduler_id, &h_resume]
                 {
