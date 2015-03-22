@@ -2,21 +2,18 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <memory>
 #include <vector>
 #include <chrono>
-#include <string>
-#include <stdint.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/asio/io_service.hpp>
 #include "Types.h"
+#include "Base.h"
 
 
 namespace coro
 {
-    class ILog;
-    class CScheduler
+    class CScheduler : public CBase
     {
     public:
         CScheduler(std::shared_ptr<ILog> log, const uint32_t& scheduler_id, const std::string& scheduler_name);
@@ -40,7 +37,6 @@ namespace coro
         const std::string name;
     private:
         boost::mutex m_mutex;
-        std::shared_ptr<ILog> m_log;
         std::vector<boost::thread> m_threads;
         boost::asio::io_service m_service;
         std::unique_ptr<boost::asio::io_service::work> m_work;

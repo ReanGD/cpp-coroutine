@@ -8,9 +8,9 @@
 #include "ThreadStorage.h"
 
 coro::CScheduler::CScheduler(std::shared_ptr<ILog> log, const uint32_t& scheduler_id, const std::string& scheduler_name)
-    : id(scheduler_id)
+    : CBase(log)
+    , id(scheduler_id)
     , name(scheduler_name)
-    , m_log(log)
 
 {
 }
