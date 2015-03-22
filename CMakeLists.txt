@@ -14,6 +14,7 @@ set(Boost_USE_MULTITHREADED ON)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src/)
+include_directories(include/)
 
 find_package(Boost COMPONENTS thread system context REQUIRED)
 set(LIBS ${Boost_LIBRARIES})
@@ -23,5 +24,6 @@ set(SRCS ${SRC_MAIN})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -fcxx-exceptions -fexceptions -Weverything -pedantic -Wno-c++98-compat -Wno-exit-time-destructors -Wno-global-constructors -Wno-padded")
 
-add_executable(${PROJECT} ${SRCS})
+add_library(${PROJECT} STATIC ${SRCS})
 target_link_libraries(${PROJECT} ${LIBS})
+set_target_properties(${PROJECT} PROPERTIES OUTPUT_NAME ${PROJECT}_static)

@@ -1,4 +1,5 @@
 bin
+lib
 CMakeCache.txt
 CMakeFiles
 Makefile
