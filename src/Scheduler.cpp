@@ -25,6 +25,7 @@ coro::CScheduler::CScheduler(std::shared_ptr<ILog> log,
     : CBase(log)
     , id(scheduler_id)
     , name(scheduler_name)
+    , pimpl(new impl())
 
 {
 }
@@ -89,12 +90,10 @@ void coro::CScheduler::Start(const uint32_t& thread_count, const tTask& init_tas
     pimpl->threads.reserve(thread_count);
 
     for (uint32_t i = 0; i != thread_count; ++i)
-        pimpl->threads.emplace_back(
-            boost::thread(
-                [this, i, init_task]
-                {
-                    MainLoop(i, init_task);
-                }));
+        pimpl->threads.emplace_back([this, i, init_task]
+                                    {
+                                        MainLoop(i, init_task);
+                                    });
 }
 
 void coro::CScheduler::Add(tTask task)
