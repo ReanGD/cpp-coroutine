@@ -2,13 +2,9 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <vector>
 #include <chrono>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/asio/io_service.hpp>
-#include "Types.h"
 #include "Base.h"
+#include "Types.h"
 
 
 namespace coro
@@ -36,10 +32,7 @@ namespace coro
         const uint32_t id;
         const std::string name;
     private:
-        boost::mutex m_mutex;
-        std::vector<boost::thread> m_threads;
-        boost::asio::io_service m_service;
-        std::unique_ptr<boost::asio::io_service::work> m_work;
+        struct impl; std::unique_ptr<impl> pimpl;
     };
 }
 
