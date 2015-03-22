@@ -6,7 +6,6 @@
 #include "SchedulerManager.h"
 #include "ContextManager.h"
 #include "ThreadStorage.h"
-#include "Scheduler.h"
 #include <boost/format.hpp>
 #include <boost/thread/lock_guard.hpp>
 
@@ -15,7 +14,7 @@ void coro::CContextImpl::SResume::Init(const uint32_t& p_resume_id)
 {
     is_init = true;
     resume_id = p_resume_id;
-    scheduler_id = CScheduler::CurrentId();
+    scheduler_id = CSchedulerManager::CurrentId();
 }
 
 bool coro::CContextImpl::SResume::IsInit()
@@ -59,7 +58,7 @@ bool coro::CContextImpl::STimeoutResume::Call(const uint32_t& context_id, const 
         Reset();
         return false;
     }
-    uint32_t scheduler_id = CScheduler::CurrentId();
+    uint32_t scheduler_id = CSchedulerManager::CurrentId();
     uint32_t next_scheduler_id;
     if(!timeouts.CheckScheduler(scheduler_id, next_scheduler_id))
         scheduler_id = next_scheduler_id;
@@ -123,7 +122,7 @@ void coro::CContextImpl::OnEnter()
     if(m_timeouts.IsLock())
     {
         ++m_resume_id;
-        m_timeouts.CallThrow(CScheduler::CurrentId());
+        m_timeouts.CallThrow(CSchedulerManager::CurrentId());
     }
 }
 
@@ -258,7 +257,7 @@ uint32_t coro::CContextImpl::AddTimeout(const std::chrono::milliseconds& duratio
 {
     boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
 
-    return m_timeouts.Add(CScheduler::CurrentId(), duration);
+    return m_timeouts.Add(CSchedulerManager::CurrentId(), duration);
 }
 
 void coro::CContextImpl::ActivateTimeout(const uint32_t& timeout_id)
@@ -302,7 +301,7 @@ bool coro::CContextImpl::ResumeTimeout()
         }else
         {
             uint32_t next_scheduler_id;
-            if(!m_timeouts.CheckScheduler(CScheduler::CurrentId(), next_scheduler_id))
+            if(!m_timeouts.CheckScheduler(CSchedulerManager::CurrentId(), next_scheduler_id))
             {
                 auto mng = Get::Instance().ShedulerManager();
                 auto const ctx_id = id;

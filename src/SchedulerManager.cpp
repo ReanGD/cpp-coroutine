@@ -8,6 +8,7 @@
 
 #include "Log.h"
 #include "Scheduler.h"
+#include "ThreadStorage.h"
 
 struct coro::CSchedulerManager::impl
 {
@@ -86,4 +87,11 @@ void coro::CSchedulerManager::Stop()
         p.second->Join();
     pimpl->m_pool.clear();
     m_log->Info("Finish wait finished all schedulers");
+}
+
+uint32_t coro::CSchedulerManager::CurrentId()
+{
+    if(CThreadStorage::GetSchedulerId() == ERROR_SCHEDULER_ID)
+        throw std::runtime_error("coro: Get scheduler id in not under scheduler thread");
+    return CThreadStorage::GetSchedulerId();
 }

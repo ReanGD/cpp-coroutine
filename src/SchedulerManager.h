@@ -21,6 +21,8 @@ namespace coro
         void Add(const uint32_t& id, tTask task);
         void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
         void Stop();
+    public:
+        static uint32_t CurrentId(void);
     private:
         struct impl; std::unique_ptr<impl> pimpl;
     };

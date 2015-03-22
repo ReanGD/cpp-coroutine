@@ -5,7 +5,6 @@
 #include "Manager.h"
 #include "ContextManager.h"
 #include "SchedulerManager.h"
-#include "Scheduler.h"
 #include "Context.h"
 
 namespace
@@ -33,7 +32,7 @@ coro::tResumeHandle coro::CurrentResumeId()
 
 uint32_t coro::CurrentSchedulerId()
 {
-    return CScheduler::CurrentId();
+    return CSchedulerManager::CurrentId();
 }
 
 void coro::yield()

@@ -144,15 +144,3 @@ void coro::CScheduler::Join()
         m_log->Info(boost::str(boost::format(msg) % id % name));
     }
 }
-
-uint32_t coro::CScheduler::CurrentId()
-{
-    if(!IsInsideScheduler())
-        throw std::runtime_error("coro: Get scheduler id in not under scheduler thread");
-    return CThreadStorage::GetSchedulerId();
-}
-
-bool coro::CScheduler::IsInsideScheduler()
-{
-    return (CThreadStorage::GetSchedulerId() != ERROR_SCHEDULER_ID);
-}

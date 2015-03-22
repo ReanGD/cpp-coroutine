@@ -26,9 +26,6 @@ namespace coro
         void Stop();
         void Join();
     public:
-        static uint32_t CurrentId(void);
-        static bool IsInsideScheduler();
-    public:
         const uint32_t id;
         const std::string name;
     private:
