@@ -25,6 +25,7 @@ void coro::CManager::Init(std::shared_ptr<ILog> log)
     pimpl->m_log = log;
     pimpl->m_scheduler_manager = std::make_shared<CSchedulerManager>(log);
     pimpl->m_context_manager = std::make_shared<CContextManager>(log);
+    pimpl->m_scheduler_manager->Create(TIMEOUT_SCHEDULER_ID, "System timeout scheduler", 1, []{});
 }
 
 std::shared_ptr<coro::CSchedulerManager> coro::CManager::ShedulerManager(void)

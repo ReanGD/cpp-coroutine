@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <boost/format.hpp>
 #include <boost/thread/lock_guard.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include "ThreadStorage.h"
 #include "Log.h"
 
@@ -85,6 +86,18 @@ void coro::CSchedulerImpl::Start(const uint32_t& thread_count, tTask init_task)
 void coro::CSchedulerImpl::Add(tTask task)
 {
     m_service.post(std::move(task));
+}
+
+void coro::CSchedulerImpl::AddTimeout(tTask task, const std::chrono::milliseconds& duration)
+{
+    auto boost_duration = boost::posix_time::milliseconds(duration.count());
+    auto timer = std::make_shared<boost::asio::deadline_timer>(m_service, boost_duration);
+    timer->async_wait([timer, task] (const boost::system::error_code& e) mutable
+                      {
+                          if (!e)
+                              task();
+                          timer.reset();
+                      });
 }
 
 void coro::CSchedulerImpl::Stop(void)

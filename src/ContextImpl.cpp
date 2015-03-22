@@ -11,6 +11,69 @@
 #include <boost/thread/lock_guard.hpp>
 
 
+void coro::CContextImpl::SResume::Init(const uint32_t& p_resume_id)
+{
+    is_init = true;
+    resume_id = p_resume_id;
+    scheduler_id = CScheduler::CurrentId();
+}
+
+bool coro::CContextImpl::SResume::IsInit()
+{
+    return is_init;
+}
+
+void coro::CContextImpl::SResume::Reset()
+{
+    is_init = false;
+}
+
+void coro::CContextImpl::SResume::Call(const uint32_t& context_id)
+{
+    Reset();
+    auto mng = Get::Instance().ShedulerManager();
+    tResumeHandle h_resume;
+    h_resume.coroutine_id = context_id;
+    h_resume.resume_id = resume_id;
+    mng->Add(scheduler_id,
+             [h_resume]
+             {
+                 coro::Get::Instance().ContextManager()->Resume(h_resume);
+             });
+}
+
+void coro::CContextImpl::STimeoutResume::Init()
+{
+    is_init = true;
+}
+
+void coro::CContextImpl::STimeoutResume::Reset()
+{
+    is_init = false;
+}
+
+bool coro::CContextImpl::STimeoutResume::Call(const uint32_t& context_id, const CTimeoutState& timeouts)
+{
+    if((!is_init) || (!timeouts.IsLock()))
+    {
+        Reset();
+        return false;
+    }
+    uint32_t scheduler_id = CScheduler::CurrentId();
+    uint32_t next_scheduler_id;
+    if(!timeouts.CheckScheduler(scheduler_id, next_scheduler_id))
+        scheduler_id = next_scheduler_id;
+
+    auto mng = Get::Instance().ShedulerManager();
+    mng->Add(scheduler_id,
+             [context_id]
+             {
+                 coro::Get::Instance().ContextManager()->ResumeTimeout(context_id);
+             });
+    
+    return true;
+}
+
 coro::CContextImpl::CContextImpl(std::shared_ptr<ILog> log, const uint32_t& context_id)
     : id(context_id)
     , m_log(log)
@@ -52,35 +115,22 @@ void coro::CContextImpl::EntryPointWrapper(intptr_t fn)
     CThreadStorage::GetContext()->EntryPoint(fn);
 }
 
-void coro::CContextImpl::CheckTimeouts()
-{
-    CTimeoutImpl expired_timeout;
-    for (auto it = m_timeouts.cbegin(); it != m_timeouts.cend(); )
-    {
-        if (it->second.IsExpired())
-        {
-            expired_timeout = it->second;
-            m_timeouts.erase(it++);
-        }
-        else
-            ++it;
-    }
-    expired_timeout.ThrowIfInit();
-}
-
 void coro::CContextImpl::OnEnter()
 {
     boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
 
     m_log->EnterCoroutine(id);
-    CheckTimeouts();
+    if(m_timeouts.IsLock())
+    {
+        ++m_resume_id;
+        m_timeouts.CallThrow(CScheduler::CurrentId());
+    }
 }
 
 void coro::CContextImpl::OnExit()
 {
     boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
 
-    CheckTimeouts();
     m_log->ExitCoroutine();
 }
 
@@ -103,19 +153,28 @@ void coro::CContextImpl::Jump(intptr_t fn/* = 0*/)
             std::rethrow_exception(m_exception);
         if (m_next_resume.is_init)
         {
-            m_next_resume.is_init = false;
-            if(CheckResume(m_next_resume.resume_id))
+            if(m_next_timeout_resume.Call(id, m_timeouts))
             {
-                auto mng = Get::Instance().ShedulerManager();
-                tResumeHandle h_resume;
-                h_resume.coroutine_id = id;
-                h_resume.resume_id = m_next_resume.resume_id;
-                mng->Add(m_next_resume.scheduler_id,
-                         [h_resume]
-                         {
-                             coro::Get::Instance().ContextManager()->Resume(h_resume);
-                         });
+                m_next_resume.Reset();
+                return;
             }
+
+            if(m_timeouts.IsLock())
+            {
+                m_next_resume.Reset();
+                return;
+            }
+
+            if(!m_next_resume.IsInit())
+                return;
+            
+            if(!CheckResume(m_next_resume.resume_id))
+            {
+                m_next_resume.Reset();
+                return;
+            }
+                
+            m_next_resume.Call(id);
         }
     }
 }
@@ -160,25 +219,24 @@ bool coro::CContextImpl::Resume(const uint32_t resume_id)
         throw std::runtime_error(boost::str(boost::format(msg) % id));
     }
 
+    bool is_finish = false;
     {
         boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
 
         if(!CheckResume(resume_id))
-            return false;
+            return is_finish;
         
         if(m_running)
         {
-            m_next_resume.is_init = true;
-            m_next_resume.resume_id = resume_id;
-            m_next_resume.scheduler_id = CScheduler::CurrentId();
-            return false;
+            m_next_resume.Init(resume_id);
+            return is_finish;
         }
 
         m_running = true;
     }
     
     Jump();
-    bool is_finish = (!m_started);
+    is_finish = (!m_started);
     return is_finish;
 }
 
@@ -189,26 +247,78 @@ void coro::CContextImpl::YieldImpl()
     OnEnter();
 }
 
-uint32_t coro::CContextImpl::AddTimeout(const std::chrono::milliseconds& duration)
-{
-    boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
-
-    auto timeout_id = m_timeout_id_counter++;
-    m_timeouts[timeout_id] = CTimeoutImpl(duration);
-    
-    return timeout_id;
-}
-
-void coro::CContextImpl::CancelTimeout(const uint32_t timeout_id)
-{
-    boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
-
-    m_timeouts.erase(timeout_id);
-}
-
 uint32_t coro::CContextImpl::GetResumeId(void)
 {
     boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
 
     return ++m_resume_id;
+}
+
+uint32_t coro::CContextImpl::AddTimeout(const std::chrono::milliseconds& duration)
+{
+    boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
+
+    return m_timeouts.Add(CScheduler::CurrentId(), duration);
+}
+
+void coro::CContextImpl::ActivateTimeout(const uint32_t& timeout_id)
+{
+    boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
+
+    uint32_t scheduler_id;
+    if(m_timeouts.Activate(timeout_id, scheduler_id))
+    {
+        auto const ctx_id = id;
+        auto mng = Get::Instance().ShedulerManager();
+        mng->Add(scheduler_id,
+                 [ctx_id]
+                 {
+                     coro::Get::Instance().ContextManager()->ResumeTimeout(ctx_id);
+                 });
+    }
+}
+
+void coro::CContextImpl::CancelTimeout(const uint32_t& timeout_id)
+{
+    boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
+
+    m_timeouts.Cancel(timeout_id);
+}
+
+bool coro::CContextImpl::ResumeTimeout()
+{
+    bool is_finish = false;
+    {
+        boost::lock_guard<boost::recursive_mutex> guard(m_mutex);
+
+        if(!m_timeouts.IsLock())
+            return is_finish;
+
+        if(m_running)
+        {
+            m_next_timeout_resume.Init();
+            return is_finish;
+
+        }else
+        {
+            uint32_t next_scheduler_id;
+            if(!m_timeouts.CheckScheduler(CScheduler::CurrentId(), next_scheduler_id))
+            {
+                auto mng = Get::Instance().ShedulerManager();
+                auto const ctx_id = id;
+                mng->Add(next_scheduler_id,
+                         [ctx_id]
+                         {
+                             coro::Get::Instance().ContextManager()->ResumeTimeout(ctx_id);
+                         });
+
+                return is_finish;
+            }
+
+            m_running = true;
+        }
+    }
+    Jump();
+    is_finish = (!m_started);
+    return is_finish;
 }

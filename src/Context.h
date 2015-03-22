@@ -20,6 +20,8 @@ namespace coro
     public:
         bool Start(tTask task, const size_t stack_size);
         bool Resume(const uint32_t resume_id);
+        bool ResumeTimeout();
+        void ActivateTimeout(const uint32_t& timeout_id);
     public:
         static tResumeHandle CurrentResumeId();
         static void YieldImpl();

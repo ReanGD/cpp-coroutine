@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <vector>
+#include <chrono>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/asio/io_service.hpp>
@@ -28,6 +29,7 @@ namespace coro
     public:
         void Start(const uint32_t& thread_count, tTask init_task);
         void Add(tTask task);
+        void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
         void Stop();
         void Join();
     public:

@@ -60,6 +60,20 @@ void coro::CSchedulerManager::Add(const uint32_t& id, tTask task)
     it->second->Add(std::move(task));
 }
 
+void coro::CSchedulerManager::AddTimeout(tTask task, const std::chrono::milliseconds& duration)
+{
+    boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
+
+    auto it = pimpl->m_pool.find(TIMEOUT_SCHEDULER_ID);
+    if(it == pimpl->m_pool.cend())
+    {
+        auto msg = boost::str(boost::format("coro: Timeout scheduler with id %1% not found") % TIMEOUT_SCHEDULER_ID);
+        throw std::runtime_error(msg);
+    }
+
+    it->second->AddTimeout(std::move(task), duration);
+}
+
 void coro::CSchedulerManager::Stop()
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);

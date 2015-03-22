@@ -104,3 +104,30 @@ void coro::CContextManager::Resume(const tResumeHandle& resume_handle)
         throw;
     }
 }
+
+void coro::CContextManager::ResumeTimeout(const uint32_t& context_id)
+{
+    try
+    {
+        if(pimpl->Get(context_id)->ResumeTimeout())
+            pimpl->Remove(context_id);
+    }
+    catch(...)
+    {
+        pimpl->Remove(context_id);
+        throw;
+    }
+}
+
+void coro::CContextManager::ActivateTimeout(const uint32_t& context_id, const uint32_t& timeout_id)
+{
+    try
+    {
+        pimpl->Get(context_id)->ActivateTimeout(timeout_id);
+    }
+    catch(...)
+    {
+        pimpl->Remove(timeout_id);
+        throw;
+    }
+}

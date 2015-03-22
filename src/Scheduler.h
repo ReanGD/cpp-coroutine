@@ -3,6 +3,7 @@
 #define SCHEDULER_H
 
 #include <memory>
+#include <chrono>
 #include <string>
 #include <stdint.h>
 #include "Types.h"
@@ -23,6 +24,7 @@ namespace coro
     public:
         void Start(const uint32_t& thread_count, tTask init_task);
         void Add(tTask task);
+        void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
         void Stop();
         void Join();
     public:

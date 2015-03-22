@@ -18,6 +18,16 @@ bool coro::CContext::Resume(const uint32_t resume_id)
     return pimpl->Resume(resume_id);
 }
 
+bool coro::CContext::ResumeTimeout()
+{
+    return pimpl->ResumeTimeout();
+}
+
+void coro::CContext::ActivateTimeout(const uint32_t& timeout_id)
+{
+    pimpl->ActivateTimeout(timeout_id);
+}
+
 coro::tResumeHandle coro::CContext::CurrentResumeId()
 {
     if(!IsInsideCoroutine())

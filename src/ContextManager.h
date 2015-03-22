@@ -21,6 +21,8 @@ namespace coro
     public:
         void Start(tTask task, const size_t stack_size);
         void Resume(const tResumeHandle& resume_handle);
+        void ResumeTimeout(const uint32_t& context_id);
+        void ActivateTimeout(const uint32_t& context_id, const uint32_t& timeout_id);
     private:
         struct impl; std::shared_ptr<impl> pimpl;
     };

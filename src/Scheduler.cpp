@@ -18,6 +18,11 @@ void coro::CScheduler::Add(tTask task)
     pimpl->Add(std::move(task));
 }
 
+void coro::CScheduler::AddTimeout(tTask task, const std::chrono::milliseconds& duration)
+{
+    pimpl->AddTimeout(std::move(task), duration);
+}
+
 void coro::CScheduler::Stop()
 {
     pimpl->Stop();
