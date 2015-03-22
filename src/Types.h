@@ -24,7 +24,8 @@ namespace coro
         uint32_t resume_id;
     };
 
-    const uint32_t TIMEOUT_SCHEDULER_ID = 0xffffffff;
+    const uint32_t ERROR_SCHEDULER_ID = 0xffffffff;
+    const uint32_t TIMEOUT_SCHEDULER_ID = 0xffffffff - 1;
 
     const size_t STACK_SIZE = 256 * 1024; // 256 kB
 

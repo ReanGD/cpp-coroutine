@@ -3,24 +3,30 @@
 #define SCHEDULER_H
 
 #include <memory>
+#include <vector>
 #include <chrono>
 #include <string>
 #include <stdint.h>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/asio/io_service.hpp>
 #include "Types.h"
 
 
 namespace coro
 {
     class ILog;
-    class CSchedulerImpl;
     class CScheduler
     {
     public:
-        CScheduler(std::shared_ptr<ILog> log, const uint32_t& id, const std::string& name);
-        ~CScheduler() = default;
+        CScheduler(std::shared_ptr<ILog> log, const uint32_t& scheduler_id, const std::string& scheduler_name);
+        ~CScheduler();
         CScheduler() = delete;
         CScheduler(const CScheduler&) = delete;
         CScheduler& operator=(const CScheduler&) = delete;
+    private:
+        void MainLoop(uint32_t thread_number);
+        boost::thread CreateThread(uint32_t thread_number, tTask init_task);
     public:
         void Start(const uint32_t& thread_count, tTask init_task);
         void Add(tTask task);
@@ -30,8 +36,15 @@ namespace coro
     public:
         static uint32_t CurrentId(void);
         static bool IsInsideScheduler();
+    public:
+        const uint32_t id;
+        const std::string name;
     private:
-        std::shared_ptr<CSchedulerImpl> pimpl;
+        boost::mutex m_mutex;
+        std::shared_ptr<ILog> m_log;
+        std::vector<boost::thread> m_threads;
+        boost::asio::io_service m_service;
+        std::unique_ptr<boost::asio::io_service::work> m_work;
     };
 }
 

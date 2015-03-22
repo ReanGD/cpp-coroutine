@@ -32,7 +32,7 @@ void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
-    if(pimpl->m_pool.find(id) != pimpl->m_pool.cend())
+    if((id == ERROR_SCHEDULER_ID) || (pimpl->m_pool.find(id) != pimpl->m_pool.cend()))
     {
         auto msg = boost::str(boost::format("coro: Scheduler with id %1% already exists") % id);
         throw std::runtime_error(msg);

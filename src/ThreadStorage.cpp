@@ -2,12 +2,12 @@
 #include "ThreadStorage.h"
 
 #include <boost/thread/tss.hpp>
-
+#include "Types.h"
 
 struct SThreadStorage
 {
     std::shared_ptr<coro::CContextImpl> context;
-    std::shared_ptr<coro::CSchedulerImpl> scheduler;
+    uint32_t scheduler_id = coro::ERROR_SCHEDULER_ID;
 };
 
 static boost::thread_specific_ptr<SThreadStorage> gt_instance;
@@ -35,19 +35,16 @@ std::shared_ptr<coro::CContextImpl> coro::CThreadStorage::GetContext(void)
     return gt_instance->context;
 }
 
-
-std::shared_ptr<coro::CSchedulerImpl> coro::CThreadStorage::SetScheduler(std::shared_ptr<CSchedulerImpl> scheduler)
+uint32_t coro::CThreadStorage::SetSchedulerId(uint32_t scheduler_id)
 {
     Init();
-    auto tmp = gt_instance->scheduler;
-    gt_instance->scheduler = scheduler;
+    auto tmp = gt_instance->scheduler_id;
+    gt_instance->scheduler_id = scheduler_id;
     return tmp;
 }
 
-
-std::shared_ptr<coro::CSchedulerImpl> coro::CThreadStorage::GetScheduler(void)
+uint32_t coro::CThreadStorage::GetSchedulerId(void)
 {
     Init();
-    return gt_instance->scheduler;
+    return gt_instance->scheduler_id;
 }
-
