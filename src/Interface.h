@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CORE_H
-#define CORE_H
+#ifndef INTERFACE_H
+#define INTERFACE_H
 
 #include <memory>
 #include "Log.h"
