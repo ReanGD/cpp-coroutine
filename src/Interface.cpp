@@ -40,7 +40,7 @@ void coro::yield()
     CContext::YieldImpl();
 }
 
-void coro::impl::AddSheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
+void coro::impl::AddScheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
 {
     Mng().ShedulerManager()->Create(id, name, thread_count, std::move(init_task));
 }

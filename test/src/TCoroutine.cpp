@@ -42,19 +42,19 @@ enum E_SHEDULERS
 
 TEST_F(TestCoroutine, BusySchedulerId)
 {
-    ASSERT_THROW(coro::AddSheduler(coro::ERROR_SCHEDULER_ID, "main"), std::runtime_error);
-    ASSERT_THROW(coro::AddSheduler(coro::TIMEOUT_SCHEDULER_ID, "main"), std::runtime_error);
+    ASSERT_THROW(coro::AddScheduler(coro::ERROR_SCHEDULER_ID, "main"), std::runtime_error);
+    ASSERT_THROW(coro::AddScheduler(coro::TIMEOUT_SCHEDULER_ID, "main"), std::runtime_error);
 }
 
 TEST_F(TestCoroutine, DuplicateSchedulerId)
 {
-    ASSERT_NO_THROW(coro::AddSheduler(E_SH_1, "main"));
-    ASSERT_THROW(coro::AddSheduler(E_SH_1, "dop"), std::runtime_error);
+    ASSERT_NO_THROW(coro::AddScheduler(E_SH_1, "main"));
+    ASSERT_THROW(coro::AddScheduler(E_SH_1, "dop"), std::runtime_error);
 }
 
 TEST_F(TestCoroutine, Yield0)
 {
-    coro::AddSheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
     coro::Start([this, &process]
                 {
@@ -67,7 +67,7 @@ TEST_F(TestCoroutine, Yield0)
 
 TEST_F(TestCoroutine, Yield1)
 {
-    coro::AddSheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
     coro::tResumeHandle h_resume;
     coro::Start([this, &process, &h_resume]
@@ -90,7 +90,7 @@ TEST_F(TestCoroutine, Yield1)
 
 TEST_F(TestCoroutine, Yield2)
 {
-    coro::AddSheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
     coro::tResumeHandle h_resume;
     coro::Start([this, &process, &h_resume]
@@ -122,8 +122,8 @@ TEST_F(TestCoroutine, Yield2)
 
 TEST_F(TestCoroutine, YieldInOtherScheduler)
 {
-    coro::AddSheduler(E_SH_1, "main");
-    coro::AddSheduler(E_SH_2, "dop");
+    coro::AddScheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_2, "dop");
     uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
     coro::Start([this, &scheduler_id, &h_resume]
@@ -146,7 +146,7 @@ TEST_F(TestCoroutine, YieldInOtherScheduler)
 
 TEST_F(TestCoroutine, TimeoutTrigger)
 {
-    coro::AddSheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_1, "main");
     bool is_triggered(false);
     uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::Start([this, &is_triggered, &scheduler_id]
@@ -174,7 +174,7 @@ TEST_F(TestCoroutine, TimeoutTrigger)
 
 TEST_F(TestCoroutine, TimeoutNotLoad)
 {
-    coro::AddSheduler(E_SH_1, "main");
+    coro::AddScheduler(E_SH_1, "main");
     bool is_triggered(false);
     uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
