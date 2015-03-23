@@ -52,7 +52,7 @@ void coro::impl::Start(tTask task,
     Mng().ShedulerManager()->Add(sheduler_id,
         [task, stack_size]
         {
-            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size);
+            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, []{});
         });
 }
 

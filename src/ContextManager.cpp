@@ -19,12 +19,12 @@ struct coro::CContextManager::impl
         return m_counter++;
     }
     
-    std::shared_ptr<CContext> Create(const uint32_t id)
+    std::shared_ptr<CContext> Create(const uint32_t id, tTask finish_task)
     {
         boost::lock_guard<boost::mutex> guard(m_mutex);
 
         auto ctx = std::make_shared<CContext>(m_log, id);
-        m_pool[id] = ctx;
+        m_pool[id] = PoolData{ctx, finish_task};
 
         return ctx;
     }
@@ -39,7 +39,7 @@ struct coro::CContextManager::impl
             auto msg = boost::str(boost::format("coro: Not fount context by id (%1%)") % id);
             throw std::runtime_error(msg);
         }
-        return it->second;
+        return it->second.context;
     }
 
     void Remove(const uint32_t& id)
@@ -53,13 +53,31 @@ struct coro::CContextManager::impl
             m_log->Warning(msg);
         }
         else
-            m_pool.erase(it);
+        {
+            try
+            {
+                it->second.finish_task();
+                m_pool.erase(it);
+            }
+            catch (...)
+            {
+                m_pool.erase(it);
+                throw;
+            }
+
+        }
     }
+
+    struct PoolData
+    {
+        std::shared_ptr<CContext> context;
+        tTask finish_task;
+    };
 
     boost::mutex m_mutex;
     uint32_t m_counter = 1;
     std::shared_ptr<ILog> m_log;
-    std::map<uint32_t, std::shared_ptr<CContext>> m_pool;
+    std::map<uint32_t, PoolData> m_pool;
 };
 
 coro::CContextManager::CContextManager(std::shared_ptr<ILog> log)
@@ -75,12 +93,12 @@ coro::CContextManager::~CContextManager()
     pimpl->m_pool.clear();
 }
 
-void coro::CContextManager::Start(tTask task, const size_t stack_size)
+void coro::CContextManager::Start(tTask task, const size_t stack_size, tTask finish_task)
 {
     auto id = pimpl->NextId();
     try
     {
-        auto coroutine = pimpl->Create(id);
+        auto coroutine = pimpl->Create(id, std::move(finish_task));
         if(coroutine->Start(std::move(task), stack_size))
             pimpl->Remove(id);
     }
