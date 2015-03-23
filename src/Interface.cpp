@@ -2,6 +2,8 @@
 #include "Interface.h"
 
 #include <thread>
+#include <atomic>
+#include <condition_variable>
 #include "Manager.h"
 #include "ContextManager.h"
 #include "SchedulerManager.h"
@@ -20,7 +22,7 @@ void coro::Init(std::shared_ptr<ILog> log)
     Mng().Init(log);
 }
 
-void coro::Stop(void)
+void coro::Stop()
 {
     Mng().ShedulerManager()->Stop();
 }
@@ -45,22 +47,43 @@ void coro::AddScheduler(const uint32_t& id, const std::string& name, const uint3
     Mng().ShedulerManager()->Create(id, name, thread_count, std::move(init_task));
 }
 
-void coro::Start(tTask task,
-                       const uint32_t& sheduler_id,
-                       const size_t stack_size)
+void coro::Start(tTask task, const uint32_t& sheduler_id, const size_t stack_size)
 {
     Mng().ShedulerManager()->Add(sheduler_id,
-        [task, stack_size]
+                                 [task, stack_size]
+                                 {
+                                     coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, []{});
+                                 });
+}
+
+void coro::SyncRun(tTask task,
+                   const uint32_t& sheduler_id,
+                   const std::chrono::milliseconds& max_duration,
+                   const size_t stack_size)
+{
+    auto ptr_cv = std::make_shared<std::condition_variable>();
+    std::atomic<bool> is_finish(false);
+    auto wrap_task = [task, stack_size, ptr_cv, &is_finish]
         {
-            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, []{});
-        });
+            auto finish_task = [ptr_cv, &is_finish]
+            {
+                is_finish = true;
+                ptr_cv->notify_all();
+            };
+            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, std::move(finish_task));
+        };
+    Mng().ShedulerManager()->Add(sheduler_id, std::move(wrap_task));
+
+    std::mutex finish_task_mutex;
+    std::unique_lock<std::mutex> lck(finish_task_mutex);
+    ptr_cv->wait_for(lck, max_duration, [&] {return (is_finish == true);});
 }
 
 void coro::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
 {
     Mng().ShedulerManager()->Add(sheduler_id,
-        [resume_handle]
-        {
-            coro::Get::Instance().ContextManager()->Resume(resume_handle);
-        });
+                                 [resume_handle]
+                                 {
+                                     coro::Get::Instance().ContextManager()->Resume(resume_handle);
+                                 });
 }

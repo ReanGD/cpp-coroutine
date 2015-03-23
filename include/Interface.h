@@ -10,7 +10,7 @@
 namespace coro
 {
     void Init(std::shared_ptr<ILog> log);
-    void Stop(void);
+    void Stop();
     tResumeHandle CurrentResumeId();
     uint32_t CurrentSchedulerId();
     void yield();
@@ -21,6 +21,10 @@ namespace coro
     void Start(tTask task,
                const uint32_t& sheduler_id,
                const size_t stack_size = STACK_SIZE);
+    void SyncRun(tTask task,
+                 const uint32_t& sheduler_id,
+                 const std::chrono::milliseconds& max_duration,
+                 const size_t stack_size = STACK_SIZE);
     void Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id);
 }
 
