@@ -16,7 +16,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src/)
 include_directories(include/)
 
-find_package(Boost COMPONENTS thread system context REQUIRED)
+find_package(Boost COMPONENTS thread system context chrono REQUIRED)
 set(LIBS ${Boost_LIBRARIES})
 
 aux_source_directory(src/ SRC_MAIN)

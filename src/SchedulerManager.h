@@ -20,7 +20,7 @@ namespace coro
         void Create(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task);
         void Add(const uint32_t& id, tTask task);
         void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
-        void Stop();
+        void Stop(const std::chrono::milliseconds& max_duration);
     public:
         static uint32_t CurrentId(void);
     private:

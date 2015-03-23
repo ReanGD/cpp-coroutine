@@ -16,7 +16,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(src/)
 include_directories(../include/)
 
-find_package(Boost COMPONENTS thread system context REQUIRED)
+find_package(Boost COMPONENTS thread system context chrono REQUIRED)
 find_package(GTest REQUIRED)
 find_library(COROUTINE_LIB coroutine_static ../lib/)
 set(LIBS ${COROUTINE_LIB} ${Boost_LIBRARIES} ${GTEST_LIBRARY})

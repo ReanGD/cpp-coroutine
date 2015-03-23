@@ -2,6 +2,7 @@
 #include "SchedulerManager.h"
 
 #include <map>
+#include <boost/chrono.hpp>
 #include <boost/format.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
@@ -36,7 +37,7 @@ coro::CSchedulerManager::CSchedulerManager(std::shared_ptr<ILog> log)
 
 coro::CSchedulerManager::~CSchedulerManager()
 {
-    Stop();
+    Stop(std::chrono::milliseconds(1));
 }
 
 void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
@@ -70,8 +71,7 @@ void coro::CSchedulerManager::AddTimeout(tTask task, const std::chrono::millisec
 
     pimpl->Get(TIMEOUT_SCHEDULER_ID)->AddTimeout(std::move(task), duration);
 }
-
-void coro::CSchedulerManager::Stop()
+void coro::CSchedulerManager::Stop(const std::chrono::milliseconds& max_duration)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
     
@@ -79,10 +79,12 @@ void coro::CSchedulerManager::Stop()
     for (auto& p : pimpl->m_pool)
         p.second->Stop();
     m_log->Info("Finish send stopped signal to all schedulers");
-    
+
     m_log->Info("Start wait finished all schedulers");
+    auto until_time = boost::chrono::steady_clock::now() + boost::chrono::milliseconds(max_duration.count());
     for (auto& p : pimpl->m_pool)
-        p.second->Join();
+        p.second->JoinUntil(until_time);
+
     pimpl->m_pool.clear();
     m_log->Info("Finish wait finished all schedulers");
 }

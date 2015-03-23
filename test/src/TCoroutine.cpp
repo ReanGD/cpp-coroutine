@@ -1,6 +1,7 @@
 #include "TCoroutine.h"
 
 #include <thread>
+#include <chrono>
 #include "Interface.h"
 #include "helper/TLogger.h"
 
@@ -118,6 +119,30 @@ TEST_F(TestCoroutine, Yield2)
 
     IncWait();
     ASSERT_EQ(3, process);
+}
+
+TEST_F(TestCoroutine, SyncRunFinishByReturn)
+{
+    coro::AddScheduler(E_SH_1, "main");
+    uint32_t process(0);
+    coro::SyncRun([this, &process]
+                  {
+                      process = 1;
+                  }, E_SH_1, std::chrono::seconds(10));
+    ASSERT_EQ(1, process);
+}
+
+TEST_F(TestCoroutine, SyncRunFinishByTimeout)
+{
+    coro::AddScheduler(E_SH_1, "main");
+    uint32_t process(0);
+    coro::SyncRun([this, &process]
+                  {
+                      std::this_thread::sleep_for(std::chrono::seconds(10));
+                      process = 1;
+                  }, E_SH_1, std::chrono::milliseconds(100));
+    ASSERT_EQ(0, process);
+    coro::Stop(std::chrono::milliseconds(10));
 }
 
 TEST_F(TestCoroutine, YieldInOtherScheduler)

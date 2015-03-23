@@ -10,7 +10,7 @@
 namespace coro
 {
     void Init(std::shared_ptr<ILog> log);
-    void Stop();
+    void Stop(const std::chrono::milliseconds& max_duration = std::chrono::seconds(600));
     tResumeHandle CurrentResumeId();
     uint32_t CurrentSchedulerId();
     void yield();

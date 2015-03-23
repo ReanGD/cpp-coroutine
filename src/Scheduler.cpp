@@ -33,7 +33,7 @@ coro::CScheduler::CScheduler(std::shared_ptr<ILog> log,
 coro::CScheduler::~CScheduler()
 {
     Stop();
-    Join();  
+    JoinUntil(boost::chrono::steady_clock::now());
 }
 
 void coro::CScheduler::MainLoop(const uint32_t& thread_number, const tTask& init_task)
@@ -129,7 +129,7 @@ void coro::CScheduler::Stop()
     }
 }
 
-void coro::CScheduler::Join()
+void coro::CScheduler::JoinUntil(const boost::chrono::steady_clock::time_point& until_time)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->mutex);
     
@@ -138,7 +138,7 @@ void coro::CScheduler::Join()
         auto msg = "Start wait finished scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
         for (auto& thread : pimpl->threads)
-            thread.join();
+            thread.try_join_until(until_time);
         pimpl->threads.clear();
         msg = "Finish wait finished scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));

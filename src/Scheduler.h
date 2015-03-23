@@ -3,6 +3,7 @@
 #define SCHEDULER_H
 
 #include <chrono>
+#include <boost/chrono.hpp>
 #include "Base.h"
 #include "Types.h"
 
@@ -24,7 +25,7 @@ namespace coro
         void Add(tTask task);
         void AddTimeout(tTask task, const std::chrono::milliseconds& duration);
         void Stop();
-        void Join();
+        void JoinUntil(const boost::chrono::steady_clock::time_point& until_time);
     public:
         const uint32_t id;
         const std::string name;

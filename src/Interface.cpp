@@ -22,9 +22,9 @@ void coro::Init(std::shared_ptr<ILog> log)
     Mng().Init(log);
 }
 
-void coro::Stop()
+void coro::Stop(const std::chrono::milliseconds& max_duration)
 {
-    Mng().SchedulerManager()->Stop();
+    Mng().SchedulerManager()->Stop(max_duration);
 }
 
 coro::tResumeHandle coro::CurrentResumeId()
@@ -50,10 +50,10 @@ void coro::AddScheduler(const uint32_t& id, const std::string& name, const uint3
 void coro::Run(tTask task, const uint32_t& sheduler_id, const size_t stack_size)
 {
     Mng().SchedulerManager()->Add(sheduler_id,
-                                 [task, stack_size]
-                                 {
-                                     coro::Get::Instance().ContextManager()->Run(std::move(task), stack_size, []{});
-                                 });
+                                  [task, stack_size]
+                                  {
+                                      coro::Get::Instance().ContextManager()->Run(std::move(task), stack_size, []{});
+                                  });
 }
 
 void coro::SyncRun(tTask task,
@@ -61,14 +61,15 @@ void coro::SyncRun(tTask task,
                    const std::chrono::milliseconds& max_duration,
                    const size_t stack_size)
 {
-    auto ptr_cv = std::make_shared<std::condition_variable>();
-    std::atomic<bool> is_finish(false);
-    auto wrap_task = [task, stack_size, ptr_cv, &is_finish]
+    struct sync_meta {std::condition_variable cv; std::atomic<bool> is_finish;};
+    auto ptr_meta = std::make_shared<sync_meta>();
+    ptr_meta->is_finish = false;
+    auto wrap_task = [task, stack_size, ptr_meta]
         {
-            auto finish_task = [ptr_cv, &is_finish]
+            auto finish_task = [ptr_meta]
             {
-                is_finish = true;
-                ptr_cv->notify_all();
+                ptr_meta->is_finish = true;
+                ptr_meta->cv.notify_all();
             };
             coro::Get::Instance().ContextManager()->Run(std::move(task), stack_size, std::move(finish_task));
         };
@@ -76,14 +77,14 @@ void coro::SyncRun(tTask task,
 
     std::mutex finish_task_mutex;
     std::unique_lock<std::mutex> lck(finish_task_mutex);
-    ptr_cv->wait_for(lck, max_duration, [&] {return (is_finish == true);});
+    ptr_meta->cv.wait_for(lck, max_duration, [ptr_meta] {return (ptr_meta->is_finish == true);});
 }
 
 void coro::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
 {
     Mng().SchedulerManager()->Add(sheduler_id,
-                                 [resume_handle]
-                                 {
-                                     coro::Get::Instance().ContextManager()->Resume(resume_handle);
-                                 });
+                                  [resume_handle]
+                                  {
+                                      coro::Get::Instance().ContextManager()->Resume(resume_handle);
+                                  });
 }
