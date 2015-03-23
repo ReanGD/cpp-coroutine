@@ -30,7 +30,7 @@ void coro::CContextImpl::SResume::Reset()
 void coro::CContextImpl::SResume::Call(const uint32_t& context_id)
 {
     Reset();
-    auto mng = Get::Instance().ShedulerManager();
+    auto mng = Get::Instance().SchedulerManager();
     tResumeHandle h_resume;
     h_resume.coroutine_id = context_id;
     h_resume.resume_id = resume_id;
@@ -63,7 +63,7 @@ bool coro::CContextImpl::STimeoutResume::Call(const uint32_t& context_id, const 
     if(!timeouts.CheckScheduler(scheduler_id, next_scheduler_id))
         scheduler_id = next_scheduler_id;
 
-    auto mng = Get::Instance().ShedulerManager();
+    auto mng = Get::Instance().SchedulerManager();
     mng->Add(scheduler_id,
              [context_id]
              {
@@ -268,7 +268,7 @@ void coro::CContextImpl::ActivateTimeout(const uint32_t& timeout_id)
     if(m_timeouts.Activate(timeout_id, scheduler_id))
     {
         auto const ctx_id = id;
-        auto mng = Get::Instance().ShedulerManager();
+        auto mng = Get::Instance().SchedulerManager();
         mng->Add(scheduler_id,
                  [ctx_id]
                  {
@@ -303,7 +303,7 @@ bool coro::CContextImpl::ResumeTimeout()
             uint32_t next_scheduler_id;
             if(!m_timeouts.CheckScheduler(CSchedulerManager::CurrentId(), next_scheduler_id))
             {
-                auto mng = Get::Instance().ShedulerManager();
+                auto mng = Get::Instance().SchedulerManager();
                 auto const ctx_id = id;
                 mng->Add(next_scheduler_id,
                          [ctx_id]

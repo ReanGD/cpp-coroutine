@@ -28,14 +28,14 @@ void coro::CManager::Init(std::shared_ptr<ILog> log)
     pimpl->m_scheduler_manager->Create(TIMEOUT_SCHEDULER_ID, "System timeout scheduler", 1, []{});
 }
 
-std::shared_ptr<coro::CSchedulerManager> coro::CManager::ShedulerManager(void)
+std::shared_ptr<coro::CSchedulerManager> coro::CManager::SchedulerManager()
 {
     if (!pimpl->m_is_init)
         throw std::runtime_error("Manager is not init");
     return pimpl->m_scheduler_manager;
 }
 
-std::shared_ptr<coro::CContextManager> coro::CManager::ContextManager(void)
+std::shared_ptr<coro::CContextManager> coro::CManager::ContextManager()
 {
     if (!pimpl->m_is_init)
         throw std::runtime_error("Manager is not init");

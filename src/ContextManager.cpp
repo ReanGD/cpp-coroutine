@@ -93,7 +93,7 @@ coro::CContextManager::~CContextManager()
     pimpl->m_pool.clear();
 }
 
-void coro::CContextManager::Start(tTask task, const size_t stack_size, tTask finish_task)
+void coro::CContextManager::Run(tTask task, const size_t stack_size, tTask finish_task)
 {
     auto id = pimpl->NextId();
     try

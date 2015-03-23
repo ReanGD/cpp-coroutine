@@ -20,7 +20,7 @@ coro::CTimeout::CTimeout(const std::chrono::milliseconds& duration)
         {
             Get::Instance().ContextManager()->ActivateTimeout(context_id, timeout_id);
         };
-    Get::Instance().ShedulerManager()->AddTimeout(std::move(lambda), duration);
+    Get::Instance().SchedulerManager()->AddTimeout(std::move(lambda), duration);
 }
 
 coro::CTimeout::~CTimeout()

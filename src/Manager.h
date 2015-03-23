@@ -20,7 +20,7 @@ namespace coro
         CManager& operator=(const CManager&) = delete;
     public:
         void Init(std::shared_ptr<ILog> log);
-        std::shared_ptr<CSchedulerManager> ShedulerManager(void);
+        std::shared_ptr<CSchedulerManager> SchedulerManager(void);
         std::shared_ptr<CContextManager> ContextManager(void);
     private:
         struct impl; std::shared_ptr<impl> pimpl;

@@ -19,7 +19,7 @@ namespace coro
         CContextManager& operator=(const CContextManager&) = delete;
         ~CContextManager();
     public:
-        void Start(tTask task, const size_t stack_size, tTask finish_task);
+        void Run(tTask task, const size_t stack_size, tTask finish_task);
         void Resume(const tResumeHandle& resume_handle);
         void ResumeTimeout(const uint32_t& context_id);
         void ActivateTimeout(const uint32_t& context_id, const uint32_t& timeout_id);

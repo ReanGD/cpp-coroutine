@@ -18,9 +18,9 @@ namespace coro
                       const std::string& name,
                       const uint32_t thread_count = 1,
                       tTask init_task = []{});
-    void Start(tTask task,
-               const uint32_t& sheduler_id,
-               const size_t stack_size = STACK_SIZE);
+    void Run(tTask task,
+             const uint32_t& sheduler_id,
+             const size_t stack_size = STACK_SIZE);
     void SyncRun(tTask task,
                  const uint32_t& sheduler_id,
                  const std::chrono::milliseconds& max_duration,

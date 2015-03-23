@@ -24,7 +24,7 @@ void coro::Init(std::shared_ptr<ILog> log)
 
 void coro::Stop()
 {
-    Mng().ShedulerManager()->Stop();
+    Mng().SchedulerManager()->Stop();
 }
 
 coro::tResumeHandle coro::CurrentResumeId()
@@ -44,15 +44,15 @@ void coro::yield()
 
 void coro::AddScheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
 {
-    Mng().ShedulerManager()->Create(id, name, thread_count, std::move(init_task));
+    Mng().SchedulerManager()->Create(id, name, thread_count, std::move(init_task));
 }
 
-void coro::Start(tTask task, const uint32_t& sheduler_id, const size_t stack_size)
+void coro::Run(tTask task, const uint32_t& sheduler_id, const size_t stack_size)
 {
-    Mng().ShedulerManager()->Add(sheduler_id,
+    Mng().SchedulerManager()->Add(sheduler_id,
                                  [task, stack_size]
                                  {
-                                     coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, []{});
+                                     coro::Get::Instance().ContextManager()->Run(std::move(task), stack_size, []{});
                                  });
 }
 
@@ -70,9 +70,9 @@ void coro::SyncRun(tTask task,
                 is_finish = true;
                 ptr_cv->notify_all();
             };
-            coro::Get::Instance().ContextManager()->Start(std::move(task), stack_size, std::move(finish_task));
+            coro::Get::Instance().ContextManager()->Run(std::move(task), stack_size, std::move(finish_task));
         };
-    Mng().ShedulerManager()->Add(sheduler_id, std::move(wrap_task));
+    Mng().SchedulerManager()->Add(sheduler_id, std::move(wrap_task));
 
     std::mutex finish_task_mutex;
     std::unique_lock<std::mutex> lck(finish_task_mutex);
@@ -81,7 +81,7 @@ void coro::SyncRun(tTask task,
 
 void coro::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
 {
-    Mng().ShedulerManager()->Add(sheduler_id,
+    Mng().SchedulerManager()->Add(sheduler_id,
                                  [resume_handle]
                                  {
                                      coro::Get::Instance().ContextManager()->Resume(resume_handle);
