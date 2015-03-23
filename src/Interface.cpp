@@ -40,12 +40,12 @@ void coro::yield()
     CContext::YieldImpl();
 }
 
-void coro::impl::AddScheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
+void coro::AddScheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
 {
     Mng().ShedulerManager()->Create(id, name, thread_count, std::move(init_task));
 }
 
-void coro::impl::Start(tTask task,
+void coro::Start(tTask task,
                        const uint32_t& sheduler_id,
                        const size_t stack_size)
 {
@@ -56,7 +56,7 @@ void coro::impl::Start(tTask task,
         });
 }
 
-void coro::impl::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
+void coro::Resume(const tResumeHandle& resume_handle, const uint32_t& sheduler_id)
 {
     Mng().ShedulerManager()->Add(sheduler_id,
         [resume_handle]
