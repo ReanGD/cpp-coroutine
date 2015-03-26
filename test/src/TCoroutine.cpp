@@ -53,7 +53,7 @@ TEST_F(TestCoroutine, DisallowToUseDuplicateSchedulerId)
     ASSERT_THROW(coro::AddScheduler(E_SH_1, "dop"), std::runtime_error);
 }
 
-TEST_F(TestCoroutine, Yield0)
+TEST_F(TestCoroutine, TaskWithoutYield)
 {
     coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
@@ -66,7 +66,7 @@ TEST_F(TestCoroutine, Yield0)
     ASSERT_EQ(1, process);
 }
 
-TEST_F(TestCoroutine, Yield1)
+TEST_F(TestCoroutine, TaskWithOneYield)
 {
     coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
@@ -89,7 +89,7 @@ TEST_F(TestCoroutine, Yield1)
     ASSERT_EQ(2, process);
 }
 
-TEST_F(TestCoroutine, Yield2)
+TEST_F(TestCoroutine, TaskWithTwoYield)
 {
     coro::AddScheduler(E_SH_1, "main");
     uint32_t process(0);
@@ -121,111 +121,101 @@ TEST_F(TestCoroutine, Yield2)
     ASSERT_EQ(3, process);
 }
 
-TEST_F(TestCoroutine, SyncRunFinishByReturn)
+TEST_F(TestCoroutine, SyncRunCompletedBeforeTimeout)
 {
     coro::AddScheduler(E_SH_1, "main");
-    uint32_t process(0);
-    coro::SyncRun([this, &process]
+    auto operation_duration_limit = std::chrono::seconds(10);
+    coro::SyncRun([this]
                   {
-                      process = 1;
-                  }, E_SH_1, std::chrono::seconds(10));
-    ASSERT_EQ(1, process);
+                      SUCCEED();
+                  }, E_SH_1, operation_duration_limit);
 }
 
-TEST_F(TestCoroutine, SyncRunFinishByTimeout)
+TEST_F(TestCoroutine, SyncRunCompletedByTimeout)
 {
     coro::AddScheduler(E_SH_1, "main");
-    uint32_t process(0);
-    coro::SyncRun([this, &process]
+    auto operation_duration_limit = std::chrono::milliseconds(100);
+    auto real_operation_duration = operation_duration_limit * 100;
+    coro::SyncRun([this, real_operation_duration]
                   {
-                      std::this_thread::sleep_for(std::chrono::seconds(10));
-                      process = 1;
-                  }, E_SH_1, std::chrono::milliseconds(100));
-    ASSERT_EQ(0, process);
+                      std::this_thread::sleep_for(real_operation_duration);
+                      FAIL();
+                  }, E_SH_1, operation_duration_limit);
     coro::Stop(std::chrono::milliseconds(10));
 }
 
-TEST_F(TestCoroutine, YieldInOtherScheduler)
+TEST_F(TestCoroutine, ResumeInOtherScheduler)
 {
     coro::AddScheduler(E_SH_1, "main");
     coro::AddScheduler(E_SH_2, "dop");
-    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
-    coro::Run([this, &scheduler_id, &h_resume]
+    coro::Run([this, &h_resume]
               {
-                  scheduler_id = coro::CurrentSchedulerId();
+                  ASSERT_EQ(E_SH_1, coro::CurrentSchedulerId());
                   h_resume = coro::CurrentResumeId();
                   IncNotify();
+
                   coro::yield();
 
-                  scheduler_id = coro::CurrentSchedulerId();
+                  ASSERT_EQ(E_SH_2, coro::CurrentSchedulerId());
                   IncNotify();
               }, E_SH_1);
     IncWait();
-    ASSERT_EQ(E_SH_1, scheduler_id);
     coro::Resume(h_resume, E_SH_2);
-
     IncWait();
-    ASSERT_EQ(E_SH_2, scheduler_id);
 }
 
-TEST_F(TestCoroutine, TimeoutTriggered)
+TEST_F(TestCoroutine, RaiseTimeOutExceptionForLongCall)
 {
     coro::AddScheduler(E_SH_1, "main");
-    bool is_triggered(false);
-    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
-    coro::Run([this, &is_triggered, &scheduler_id]
+    coro::Run([this]
               {
-                  is_triggered = false;
                   try
                   {
-                      coro::CTimeout(std::chrono::milliseconds(100));
+                      auto short_timeout = std::chrono::milliseconds(100);
+                      coro::CTimeout t(short_timeout);
                       coro::yield();
+                      FAIL();
                   }
                   catch (const coro::TimeoutError&)
                   {
-                      is_triggered = true;
-                      scheduler_id = coro::CurrentSchedulerId();
+                      ASSERT_EQ(E_SH_1, coro::CurrentSchedulerId());
                   }
                   catch (...)
                   {
+                      FAIL();
                   }
                   IncNotify();
               }, E_SH_1);
     IncWait();
-    ASSERT_EQ(true, is_triggered);
-    ASSERT_EQ(E_SH_1, scheduler_id);
 }
 
-TEST_F(TestCoroutine, TimeoutNotTriggered)
+TEST_F(TestCoroutine, NoExceptionIfOperationCompletedBeforeTimeOut)
 {
     coro::AddScheduler(E_SH_1, "main");
-    bool is_triggered(false);
-    uint32_t scheduler_id(coro::ERROR_SCHEDULER_ID);
     coro::tResumeHandle h_resume;
-    coro::Run([this, &is_triggered, &scheduler_id, &h_resume]
+    coro::Run([this, &h_resume]
               {
-                  is_triggered = false;
                   try
                   {
-                      coro::CTimeout(std::chrono::seconds(10));
+                      auto long_timeout = std::chrono::seconds(10);
+                      coro::CTimeout t(long_timeout);
                       h_resume = coro::CurrentResumeId();
                       IncNotify();
                       coro::yield();
+                      ASSERT_EQ(E_SH_1, coro::CurrentSchedulerId());
+                      IncNotify();
                   }
                   catch (const coro::TimeoutError&)
                   {
-                      is_triggered = true;
+                      FAIL();
                   }
                   catch (...)
                   {
+                      FAIL();
                   }
-                  scheduler_id = coro::CurrentSchedulerId();
-                  IncNotify();
               }, E_SH_1);
     IncWait();
     coro::Resume(h_resume, E_SH_1);
     IncWait();
-    ASSERT_EQ(false, is_triggered);
-    ASSERT_EQ(E_SH_1, scheduler_id);
 }
