@@ -26,6 +26,7 @@ struct coro::CSchedulerManager::impl
     }
     
     boost::mutex m_mutex;
+    bool m_stopped = false;
     std::map<uint32_t, std::shared_ptr<CScheduler>> m_pool;
 };
 
@@ -43,6 +44,9 @@ coro::CSchedulerManager::~CSchedulerManager()
 void coro::CSchedulerManager::Create(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
+
+    if(pimpl->m_stopped)
+        return;
 
     if((id == ERROR_SCHEDULER_ID) || (pimpl->m_pool.find(id) != pimpl->m_pool.cend()))
     {
@@ -62,6 +66,9 @@ void coro::CSchedulerManager::Add(const uint32_t& id, tTask task)
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
+    if(pimpl->m_stopped)
+        return;
+
     pimpl->Get(id)->Add(std::move(task));
 }
 
@@ -69,11 +76,20 @@ void coro::CSchedulerManager::AddTimeout(tTask task, const std::chrono::millisec
 {
     boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
 
+    if(pimpl->m_stopped)
+        return;
+
     pimpl->Get(TIMEOUT_SCHEDULER_ID)->AddTimeout(std::move(task), duration);
 }
+
 void coro::CSchedulerManager::Stop(const std::chrono::milliseconds& max_duration)
 {
-    boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
+    {
+        boost::lock_guard<boost::mutex> guard(pimpl->m_mutex);
+        if(pimpl->m_stopped)
+            return;
+        pimpl->m_stopped = true;
+    }
     
     m_log->Info("Start send stopped signal to all schedulers");
     for (auto& p : pimpl->m_pool)
@@ -91,7 +107,8 @@ void coro::CSchedulerManager::Stop(const std::chrono::milliseconds& max_duration
 
 uint32_t coro::CSchedulerManager::CurrentId()
 {
-    if(CThreadStorage::GetSchedulerId() == ERROR_SCHEDULER_ID)
+    auto scheduler_id = CThreadStorage::GetSchedulerId();
+    if(scheduler_id == ERROR_SCHEDULER_ID)
         throw std::runtime_error("coro: Get scheduler id in not under scheduler thread");
-    return CThreadStorage::GetSchedulerId();
+    return scheduler_id;
 }
