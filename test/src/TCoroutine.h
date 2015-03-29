@@ -4,8 +4,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <thread>
-#include <stdint.h>
 #include <condition_variable>
 #include "gtest/gtest.h"
 
