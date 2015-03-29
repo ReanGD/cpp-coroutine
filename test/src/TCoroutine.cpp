@@ -126,7 +126,7 @@ TEST_F(TestCoroutine, SyncRunCompletedBeforeTimeout)
     coro::AddScheduler(E_SH_1, "main");
     auto operation_duration_limit = std::chrono::seconds(10);
     auto real_operation_duration = operation_duration_limit / 100;
-    coro::SyncRun([this]
+    coro::SyncRun([&]
                   {
                       std::this_thread::sleep_for(real_operation_duration);
                       SUCCEED();
@@ -138,7 +138,7 @@ TEST_F(TestCoroutine, SyncRunCompletedByTimeout)
     coro::AddScheduler(E_SH_1, "main");
     auto operation_duration_limit = std::chrono::milliseconds(100);
     auto real_operation_duration = operation_duration_limit * 100;
-    coro::SyncRun([this, real_operation_duration]
+    coro::SyncRun([&]
                   {
                       std::this_thread::sleep_for(real_operation_duration);
                       FAIL();
