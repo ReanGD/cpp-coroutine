@@ -1,6 +1,7 @@
 #include "TCoroutine.h"
 
 #include "Interface.h"
+#include "helper/TConst.h"
 #include "helper/TLogger.h"
 
 void TestCoroutine::SetUp()
@@ -32,12 +33,6 @@ void TestCoroutine::IncWait(const std::chrono::milliseconds& duration)
     ++m_wait_counter;
     Wait(m_wait_counter, duration);
 }
-
-enum E_SHEDULERS
-{
-    E_SH_1,
-    E_SH_2
-};
 
 TEST_F(TestCoroutine, DisallowToUseServiceSchedulerId)
 {
@@ -193,4 +188,15 @@ TEST_F(TestCoroutine, NoExceptionIfOperationCompletedBeforeTimeOut)
     IncWait();
     coro::Resume(h_resume, E_SH_1);
     IncWait();
+}
+
+TEST_F(TestCoroutine, StopInfiniteLoopCoroutine)
+{
+    coro::AddScheduler(E_SH_1, "main");
+    coro::Run([]
+              {
+                  while(true) {};
+                  FAIL();
+              }, E_SH_1);
+    coro::Stop(std::chrono::milliseconds(10));
 }

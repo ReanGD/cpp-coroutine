@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include "Interface.h"
+#include "helper/TConst.h"
 #include "helper/TLogger.h"
 
 void TestSyncRun::SetUp()
@@ -14,12 +15,6 @@ void TestSyncRun::TearDown()
 {
     coro::Stop(std::chrono::milliseconds(10));
 }
-
-enum E_SHEDULERS
-{
-    E_SH_1,
-    E_SH_2
-};
 
 TEST_F(TestSyncRun, CompletedBeforeTimeout)
 {
