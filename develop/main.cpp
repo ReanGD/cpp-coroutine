@@ -1,5 +1,3 @@
-#include "stdafx.h"
-
 #include <map>
 #include <thread>
 #include <iostream>
@@ -67,14 +65,11 @@ enum E_SHEDULERS
 void task(uint32_t coro_num)
 {
     auto scheduler_id = coro::CurrentSchedulerId();
-    CLogImpl().Debug("coro start in scheduler " + boost::lexical_cast<std::string>(scheduler_id));
+    CLogImpl().Debug("coro start in scheduler " + boost::lexical_cast<std::string>(scheduler_id) +
+                     " num=" + boost::lexical_cast<std::string>(coro_num));
     try
     {
-        g_map[coro_num] = coro::CurrentResumeId();
-        coro::CTimeout t(std::chrono::seconds(10));
-        local_sleep(3);
-        CLogImpl().Debug("coro yield");
-        coro::yield();
+        while(true) {};
     }
     catch(const std::exception& e)
     {
@@ -87,19 +82,12 @@ void task(uint32_t coro_num)
 void run()
 {
     coro::Init(std::make_shared<CLogImpl>());
-    coro::AddSheduler(E_SH_MAIN, "main", 2, []{ std::cout << "init thread" << std::endl;});
-    coro::Start([]{ task(1); }, E_SH_MAIN);
-    // coro::Start([]{ task(2); }, E_SH_MAIN);
-
-    local_sleep(5);
-    for (auto& v_map : g_map)
-    {
-        auto resume_id = v_map.second;
-        std::cout << "resume " << resume_id.coroutine_id << ":" << resume_id.resume_id << std::endl;
-        coro::Resume(resume_id, E_SH_MAIN);
-    }
+    coro::AddScheduler(E_SH_MAIN, "main", 2, []{ std::cout << "init thread" << std::endl;});
+    coro::Run([]{ task(1); }, E_SH_MAIN);
     local_sleep(2);
-    coro::Stop();
+    CLogImpl().Debug("before stop all");
+    coro::Stop(std::chrono::milliseconds(10));
+    CLogImpl().Debug("after stop all");
 }
 
 int main()
