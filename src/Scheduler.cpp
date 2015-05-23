@@ -48,6 +48,12 @@ void coro::CScheduler::MainLoop(const uint32_t& thread_number, const tTask& init
             {
                 pimpl->service.run_one();
             }
+            catch (const boost::thread_interrupted&)
+            {
+                auto msg =
+                    "Task in thread number %1% in scheduler with id %2% and name '%3%' finish by boost::thread_interrupted";
+                m_log->Info(boost::str(boost::format(msg) % thread_number % id % name));
+            }
             catch (std::exception& e)
             {
                 auto msg =
@@ -138,9 +144,16 @@ void coro::CScheduler::JoinUntil(const boost::chrono::steady_clock::time_point& 
         auto msg = "Start wait finished scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
         for (auto& thread : pimpl->threads)
-            thread.try_join_until(until_time);
+            if (!thread.try_join_until(until_time))
+                thread.interrupt();
+
         pimpl->threads.clear();
         msg = "Finish wait finished scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
     }
+}
+
+void coro::CScheduler::InterruptionPoint(void)
+{
+    boost::this_thread::interruption_point();
 }

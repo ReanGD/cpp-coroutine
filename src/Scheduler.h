@@ -27,6 +27,8 @@ namespace coro
         void Stop();
         void JoinUntil(const boost::chrono::steady_clock::time_point& until_time);
     public:
+        static void InterruptionPoint(void);
+    public:
         const uint32_t id;
         const std::string name;
     private:

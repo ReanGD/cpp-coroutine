@@ -14,6 +14,7 @@ namespace coro
     tResumeHandle CurrentResumeId();
     uint32_t CurrentSchedulerId();
     void yield();
+    void InterruptionPoint(void);
     void AddScheduler(const uint32_t& id,
                       const std::string& name,
                       const uint32_t thread_count = 1,

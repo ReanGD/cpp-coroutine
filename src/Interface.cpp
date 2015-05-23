@@ -8,6 +8,7 @@
 #include "ContextManager.h"
 #include "SchedulerManager.h"
 #include "Context.h"
+#include "Scheduler.h"
 
 namespace
 {
@@ -40,6 +41,11 @@ uint32_t coro::CurrentSchedulerId()
 void coro::yield()
 {
     CContext::YieldImpl();
+}
+
+void coro::InterruptionPoint(void)
+{
+    CScheduler::InterruptionPoint();
 }
 
 void coro::AddScheduler(const uint32_t& id, const std::string& name, const uint32_t thread_count, tTask init_task)
