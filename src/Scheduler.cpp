@@ -60,6 +60,7 @@ void coro::CScheduler::MainLoop(const uint32_t& thread_number, const tTask& init
                     "Task in thread number %1% in scheduler with id %2% and name '%3%' finish with exception %4%";
                 m_log->Error(boost::str(boost::format(msg) % thread_number % id % name % e.what()));
             }
+
             catch (...)
             {
                 auto msg =
@@ -127,9 +128,10 @@ void coro::CScheduler::Stop()
     {
         auto msg = "Start send stopped signal to scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
-        m_log->Info("Start send stopped signal to schedulers");
         pimpl->work.reset();
         pimpl->service.stop();
+        for (auto& thread : pimpl->threads)
+            thread.interrupt();
         msg = "Finish send stopped signal to scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
     }
@@ -145,7 +147,10 @@ void coro::CScheduler::JoinUntil(const boost::chrono::steady_clock::time_point& 
         m_log->Info(boost::str(boost::format(msg) % id % name));
         for (auto& thread : pimpl->threads)
             if (!thread.try_join_until(until_time))
-                thread.interrupt();
+            {
+                auto msg = "Unable to wait for completion thread %1% in scheduler with id %2% and name \"%3%\"";
+                m_log->Error(boost::str(boost::format(msg) % thread.get_id() % id % name));
+            }
 
         pimpl->threads.clear();
         msg = "Finish wait finished scheduler with id %1% and name \"%2%\"";
