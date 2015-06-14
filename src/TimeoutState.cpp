@@ -55,15 +55,19 @@ void coro::CTimeoutState::CallThrow(const uint32_t& scheduler_id)
 
     m_lock = false;
     std::chrono::milliseconds duration;
-    for (auto& it : m_storage)
+    uint32_t id;
+    for (auto& it : m_storage) // we wants change state for all elements
     {
         if (it.second.state == State::TRIGGERED)
             it.second.state = State::OFF;
         if (it.second.scheduler_id == scheduler_id)
+        {
+            id = it.first;
             duration = it.second.duration;
+        }
     }
-    auto msg = "coro: Operation timeout %1% ms";
-    throw TimeoutError(boost::str(boost::format(msg) % duration.count()));
+    auto msg = "coro: Operation timeout %1% ms (timeout_id = %2%)";
+    throw TimeoutError(boost::str(boost::format(msg) % duration.count() % id));
 }
 
 bool coro::CTimeoutState::IsLock() const

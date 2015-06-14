@@ -69,7 +69,9 @@ void task(uint32_t coro_num)
                      " num=" + boost::lexical_cast<std::string>(coro_num));
     try
     {
-        while(true) {};
+        std::chrono::seconds sec(coro_num);
+        coro::CTimeout t(sec);
+        coro::yield();
     }
     catch(const std::exception& e)
     {
@@ -84,7 +86,8 @@ void run()
     coro::Init(std::make_shared<CLogImpl>());
     coro::AddScheduler(E_SH_MAIN, "main", 2, []{ std::cout << "init thread" << std::endl;});
     coro::Run([]{ task(1); }, E_SH_MAIN);
-    local_sleep(2);
+    coro::Run([]{ task(2); }, E_SH_MAIN);
+    local_sleep(4);
     CLogImpl().Debug("before stop all");
     coro::Stop(std::chrono::milliseconds(10));
     CLogImpl().Debug("after stop all");
