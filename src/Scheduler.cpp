@@ -143,12 +143,12 @@ void coro::CScheduler::JoinUntil(const boost::chrono::steady_clock::time_point& 
     
     if (pimpl->threads.size() != 0)
     {
-        std::string msg = "Start wait finished scheduler with id %1% and name \"%2%\"";
+        auto msg = "Start wait finished scheduler with id %1% and name \"%2%\"";
         m_log->Info(boost::str(boost::format(msg) % id % name));
         for (auto& thread : pimpl->threads)
             if (!thread.try_join_until(until_time))
             {
-                msg = "Unable to wait for completion thread %1% in scheduler with id %2% and name \"%3%\"";
+                auto msg = "Unable to wait for completion thread %1% in scheduler with id %2% and name \"%3%\"";
                 m_log->Error(boost::str(boost::format(msg) % thread.get_id() % id % name));
             }
 

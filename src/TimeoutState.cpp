@@ -19,6 +19,15 @@ void coro::CTimeoutState::RecalcLock()
 uint32_t coro::CTimeoutState::Add(const uint32_t& scheduler_id, const std::chrono::milliseconds& duration)
 {
     auto id = m_last_id++;
+    
+    if (m_storage.size() > 10) // clear old elements
+    {
+        for (auto it = m_storage.begin(); it != m_storage.end();)
+            if (it->second.state == State::OFF)
+                m_storage.erase(it++);
+            else
+                ++it;
+    }
     m_storage[id] = SData(scheduler_id, duration);
 
     return id;
@@ -27,7 +36,7 @@ uint32_t coro::CTimeoutState::Add(const uint32_t& scheduler_id, const std::chron
 bool coro::CTimeoutState::Activate(const uint32_t& id, uint32_t& scheduler_id)
 {
     auto it = m_storage.find(id);
-    if(it != m_storage.cend())
+    if ((it != m_storage.cend()) && (it->second.state == State::WAIT))
     {
         it->second.state = State::TRIGGERED;
         scheduler_id = it->second.scheduler_id;
@@ -55,19 +64,17 @@ void coro::CTimeoutState::CallThrow(const uint32_t& scheduler_id)
 
     m_lock = false;
     std::chrono::milliseconds duration;
-    uint32_t id;
-    for (auto& it : m_storage) // we wants change state for all elements
+    for (auto& it : m_storage)
     {
         if (it.second.state == State::TRIGGERED)
-            it.second.state = State::OFF;
-        if (it.second.scheduler_id == scheduler_id)
         {
-            id = it.first;
-            duration = it.second.duration;
+            it.second.state = State::OFF;
+            if (it.second.scheduler_id == scheduler_id)
+                duration = it.second.duration;
         }
     }
-    auto msg = "coro: Operation timeout %1% ms (timeout_id = %2%)";
-    throw TimeoutError(boost::str(boost::format(msg) % duration.count() % id));
+    auto msg = "coro: Operation timeout %1% ms";
+    throw TimeoutError(boost::str(boost::format(msg) % duration.count()));
 }
 
 bool coro::CTimeoutState::IsLock() const
