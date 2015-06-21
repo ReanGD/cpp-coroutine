@@ -1,5 +1,6 @@
 #include "TCoroutine.h"
 
+#include <thread>
 #include "Interface.h"
 #include "helper/TConst.h"
 #include "helper/TLogger.h"
@@ -150,6 +151,43 @@ TEST_F(TestCoroutine, RaiseTimeOutExceptionForLongCall)
                   catch (const coro::TimeoutError&)
                   {
                       ASSERT_EQ(E_SH_1, coro::CurrentSchedulerId());
+                  }
+                  catch (...)
+                  {
+                      FAIL();
+                  }
+                  IncNotify();
+              }, E_SH_1);
+    IncWait();
+}
+
+TEST_F(TestCoroutine, NoExceptionIfTimeoutExitFromScope)
+{
+    coro::AddScheduler(E_SH_1, "main");
+    coro::tResumeHandle h_resume;
+    coro::Run([this, &h_resume]
+              {
+                  try
+                  {
+                      {
+                          auto canceled_timeout = std::chrono::milliseconds(0);
+                          coro::CTimeout t(canceled_timeout);
+                      }
+                      auto not_expired_timeout = std::chrono::seconds(10);
+                      coro::CTimeout t(not_expired_timeout);
+
+                      auto wait_expired_canceled_timeout = std::chrono::milliseconds(100);
+                      std::this_thread::sleep_for(wait_expired_canceled_timeout);
+                      
+                      h_resume = coro::CurrentResumeId();
+                      IncNotify();
+                      coro::yield();
+                      SUCCEED();
+                      IncNotify();
+                  }
+                  catch (const coro::TimeoutError&)
+                  {
+                      FAIL();
                   }
                   catch (...)
                   {
