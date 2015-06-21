@@ -109,9 +109,14 @@ void coro::CContextImpl::EntryPoint(intptr_t fn)
 
 void coro::CContextImpl::EntryPointWrapper(intptr_t fn)
 {
-    if(!CThreadStorage::GetContext())
-        throw std::runtime_error("coro: Context varaible not set before start coroutine");
-    CThreadStorage::GetContext()->EntryPoint(fn);
+    coro::CContextImpl* ctx_impl_raw_ptr = nullptr;
+    {
+        auto ctx_impl = CThreadStorage::GetContext();
+        if(!ctx_impl)
+           throw std::runtime_error("coro: Context varaible not set before start coroutine");
+        ctx_impl_raw_ptr = ctx_impl.get();
+    }
+    ctx_impl_raw_ptr->EntryPoint(fn);
 }
 
 void coro::CContextImpl::OnEnter()
